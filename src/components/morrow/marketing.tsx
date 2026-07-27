@@ -7,11 +7,8 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { Wordmark } from "./primitives";
 
 const NAV = [
-  { label: "Product", to: "/how-it-works", hash: "product" },
   { label: "How it works", to: "/how-it-works", hash: undefined },
   { label: "Market", to: "/market", hash: undefined },
-  { label: "For businesses", to: "/how-it-works", hash: "for-businesses" },
-  { label: "For lenders", to: "/how-it-works", hash: "for-lenders" },
 ] as const;
 
 export function MarketingNav() {
@@ -76,50 +73,45 @@ export function MarketingNav() {
   );
 }
 
-const FOOTER_COLUMNS = [
+const FOOTER_LINKS = [
   {
     title: "Product",
-    links: ["Receivables market", "Funding auctions", "Settlement waterfall", "Buyer acceptance"],
+    links: [
+      { label: "How it works", to: "/how-it-works" as const },
+      { label: "Receivables market", to: "/market" as const },
+      { label: "Launch app", to: "/connect" as const },
+    ],
   },
-  { title: "Developers", links: ["Documentation", "Arc integration", "USDC reference", "Status"] },
-  { title: "Resources", links: ["Credit methodology", "Demo guide", "Changelog", "Support"] },
-  { title: "Legal", links: ["Terms", "Privacy", "Disclosures", "Risk notice"] },
 ];
 
 export function MarketingFooter() {
   return (
     <footer className="border-t border-border bg-surface">
       <div className="mx-auto w-full max-w-[1200px] px-5 py-14">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(4,1fr)]">
+        <div className="grid gap-10 sm:grid-cols-[1fr_auto] sm:items-start">
           <div>
             <Wordmark />
             <p className="mt-3 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
-              Stablecoin-native receivables credit infrastructure. Buyer-accepted invoices,
-              competitive funding, deterministic settlement on Arc.
+              Turn buyer-accepted invoices into immediate USDC through competitive funding and
+              programmable settlement on Arc.
             </p>
-            <div className="mt-5 flex gap-2">
-              {["X", "in", "GH"].map((social) => (
-                <span
-                  key={social}
-                  className="grid h-8 w-8 place-items-center rounded-lg border border-border bg-card text-[11px] font-semibold text-muted-foreground"
-                >
-                  {social}
-                </span>
-              ))}
-            </div>
           </div>
 
-          {FOOTER_COLUMNS.map((column) => (
+          {FOOTER_LINKS.map((column) => (
             <div key={column.title}>
               <p className="text-[12px] font-semibold tracking-wide text-foreground uppercase">
                 {column.title}
               </p>
               <ul className="mt-3 space-y-2">
                 {column.links.map((link) => (
-                  <li key={link}>
-                    <span className="cursor-default text-[13px] text-muted-foreground transition-colors hover:text-foreground">
-                      {link}
-                    </span>
+                  <li key={link.label}>
+                    <Link
+                      to={link.to}
+                      search={link.to === "/connect" ? { next: "app" } : undefined}
+                      className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -129,7 +121,7 @@ export function MarketingFooter() {
 
         <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
           <p className="text-[12px] text-muted-foreground">
-            © 2026 Morrow Labs. Arc Testnet demo · Mock business and risk data · Test USDC only.
+            © 2026 Morrow. Arc Testnet prototype · Mock business and risk data.
           </p>
           <p className="text-[12px] text-muted-foreground">
             Not an investment product. Risk assessment is illustrative.
