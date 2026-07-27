@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /connect
+Disallow: /create-invoice
+Disallow: /dashboard/
+Disallow: /portfolio
+Disallow: /activity
+Disallow: /settings
