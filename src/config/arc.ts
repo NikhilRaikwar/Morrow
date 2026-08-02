@@ -13,6 +13,7 @@ export const ARC_USDC_ADDRESS =
   "0x3600000000000000000000000000000000000000" as const satisfies Address;
 export const ARC_USDC_DECIMALS = 6;
 export const ARC_NATIVE_USDC_DECIMALS = 18;
+export const ARC_WALLET_DISPLAY_DECIMALS = 6;
 
 export const arcTestnet = defineChain({
   id: ARC_TESTNET_CHAIN_ID,
@@ -20,7 +21,7 @@ export const arcTestnet = defineChain({
   nativeCurrency: {
     name: "USDC",
     symbol: "USDC",
-    decimals: ARC_NATIVE_USDC_DECIMALS,
+    decimals: ARC_WALLET_DISPLAY_DECIMALS,
   },
   rpcUrls: {
     default: { http: [ARC_TESTNET_RPC_URL] },

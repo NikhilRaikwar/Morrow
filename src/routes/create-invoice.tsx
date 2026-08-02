@@ -118,7 +118,7 @@ function CreateInvoicePage() {
 
   const copyLink = () => {
     if (!created) return;
-    const link = `https://morrow.demo/accept/${created.id}`;
+    const link = `${window.location.origin}/invoice/${created.id}`;
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       void navigator.clipboard.writeText(link);
     }

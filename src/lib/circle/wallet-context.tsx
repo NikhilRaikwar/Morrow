@@ -1,175 +1,310 @@
-import { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
+import type { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
+import type { SocialLoginResult } from "@circle-fin/w3s-pw-web-sdk/dist/src/types";
+import { useNavigate } from "@tanstack/react-router";
+import { Buffer } from "vite-plugin-node-polyfills/shims/buffer";
 import {
   createContext,
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-
 import type { MorrowCircleAction } from "./user-wallet.server";
 
+export type CircleSessionStatus =
+  "loading" | "disconnected" | "onboarding" | "connected" | "expired" | "error";
 export type OperationState =
-  "idle" | "preparing" | "awaiting_approval" | "submitted" | "confirmed" | "failed" | "cancelled";
-
+  | "idle"
+  | "preparing"
+  | "awaiting_approval"
+  | "submitted"
+  | "confirming"
+  | "confirmed"
+  | "failed"
+  | "cancelled";
 type WalletSession = {
-  userId: string;
   userToken: string;
   encryptionKey: string;
   walletId: string;
   address: string;
   balances: unknown[];
+  provider: "Google";
 };
-
-type StartResponse = Omit<WalletSession, "walletId" | "address" | "balances"> & {
-  appId: string;
-  walletId?: string;
-  address?: string;
-  challengeId?: string;
-};
-type ChallengeExecutionResult = { data?: { transactionHash?: string; txHash?: string } };
-
-type CircleWalletContextValue = {
+type SocialConfig = { configured: true; appId: string; googleClientId: string };
+type Context = {
   session: WalletSession | null;
+  sessionStatus: CircleSessionStatus;
   operationState: OperationState;
   error: string | null;
-  connect: (userId: string) => Promise<WalletSession>;
+  connect: (next?: string) => Promise<void>;
   refresh: () => Promise<WalletSession | null>;
-  execute: (action: MorrowCircleAction) => Promise<{ txHash?: string }>;
+  execute: (
+    action: MorrowCircleAction,
+  ) => Promise<{ txHash?: string; challengeId?: string; transactionId?: string }>;
   disconnect: () => void;
 };
 
-const CircleWalletContext = createContext<CircleWalletContextValue | null>(null);
+const DEVICE_SESSION_KEY = "morrow_circle_social_device";
+const NEXT_ROUTE_KEY = "morrow_circle_next_route";
+const CircleWalletContext = createContext<Context | null>(null);
 
-async function json<T>(path: string, body: unknown): Promise<T> {
+async function request<T>(path: string, method: "GET" | "POST", body?: unknown): Promise<T> {
   const response = await fetch(path, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
+    method,
+    headers: body ? { "content-type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+    credentials: "same-origin",
   });
   const payload = (await response.json()) as T & { error?: string };
   if (!response.ok) throw new Error(payload.error ?? "Circle request failed.");
   return payload;
 }
 
+function safeNext(value: string | null) {
+  return value?.startsWith("/") && !value.startsWith("//") ? value : "/dashboard/business";
+}
+
 export function CircleWalletProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
   const sdk = useRef<W3SSdk | null>(null);
+  const config = useRef<SocialConfig | null>(null);
   const [session, setSession] = useState<WalletSession | null>(null);
+  const [sessionStatus, setSessionStatus] = useState<CircleSessionStatus>("loading");
   const [operationState, setOperationState] = useState<OperationState>("idle");
   const [error, setError] = useState<string | null>(null);
 
-  const executeChallenge = useCallback(async (challengeId: string) => {
-    const instance = sdk.current;
-    if (!instance) throw new Error("Circle approval SDK is not ready.");
-    return new Promise<unknown>((resolve, reject) => {
-      instance.execute(challengeId, (challengeError, result) => {
-        if (challengeError) return reject(challengeError);
-        if (result?.status === "FAILED" || result?.status === "EXPIRED") {
-          return reject(new Error("Circle challenge was not completed."));
-        }
+  const approve = useCallback(async (challengeId: string) => {
+    if (!sdk.current) throw new Error("Circle approval SDK is not ready.");
+    return new Promise<unknown>((resolve, reject) =>
+      sdk.current!.execute(challengeId, (challengeError, result) => {
+        if (challengeError) return reject(new Error(challengeError.message));
+        if (result?.status === "FAILED") return reject(new Error("Circle challenge failed."));
+        if (result?.status === "EXPIRED") return reject(new Error("Circle challenge expired."));
         resolve(result);
-      });
-    });
+      }),
+    );
   }, []);
 
-  const refresh = useCallback(async () => {
-    if (!session) return null;
-    const wallet = await json<{ walletId: string; address: string; balances: unknown[] }>(
+  const loadWallet = useCallback(async (userToken: string, encryptionKey: string) => {
+    const wallet = await request<{ walletId: string; address: string; balances: unknown[] }>(
       "/api/circle/wallet",
-      { userToken: session.userToken },
+      "POST",
+      { userToken },
     );
-    const next = { ...session, ...wallet };
+    const next: WalletSession = {
+      userToken,
+      encryptionKey,
+      ...wallet,
+      provider: "Google",
+    };
     setSession(next);
+    setSessionStatus("connected");
     return next;
-  }, [session]);
+  }, []);
 
-  const connect = useCallback(
-    async (userId: string) => {
-      setError(null);
-      setOperationState("preparing");
+  const completeSocialLogin = useCallback(
+    async (result: SocialLoginResult) => {
       try {
-        const started = await json<StartResponse>("/api/circle/session/start", { userId });
-        const instance = new W3SSdk({ appSettings: { appId: started.appId } });
-        instance.setAuthentication({
-          userToken: started.userToken,
-          encryptionKey: started.encryptionKey,
+        setError(null);
+        setSessionStatus("onboarding");
+        setOperationState("preparing");
+        sdk.current?.setAuthentication({
+          userToken: result.userToken,
+          encryptionKey: result.encryptionKey,
         });
-        sdk.current = instance;
-        if (started.challengeId) {
-          setOperationState("awaiting_approval");
-          await executeChallenge(started.challengeId);
-        }
-        const wallet = await json<{ walletId: string; address: string; balances: unknown[] }>(
-          "/api/circle/wallet",
-          { userToken: started.userToken },
+        const initialized = await request<{ challengeId?: string }>(
+          "/api/circle/social/initialize",
+          "POST",
+          { userToken: result.userToken },
         );
-        const next = {
-          userId: started.userId,
-          userToken: started.userToken,
-          encryptionKey: started.encryptionKey,
-          ...wallet,
-        };
-        setSession(next);
+        if (initialized.challengeId) {
+          setOperationState("awaiting_approval");
+          await approve(initialized.challengeId);
+          setOperationState("confirming");
+        }
+        await loadWallet(result.userToken, result.encryptionKey);
         setOperationState("confirmed");
-        return next;
+        sessionStorage.removeItem(DEVICE_SESSION_KEY);
+        const destination = safeNext(sessionStorage.getItem(NEXT_ROUTE_KEY));
+        sessionStorage.removeItem(NEXT_ROUTE_KEY);
+        void navigate({ to: destination as "/dashboard/business", replace: true });
       } catch (cause) {
-        const message = cause instanceof Error ? cause.message : "Unable to connect Circle Wallet.";
+        const message = cause instanceof Error ? cause.message : "Unable to finish Google sign-in.";
         setError(message);
+        setSessionStatus("error");
         setOperationState("failed");
-        throw cause;
       }
     },
-    [executeChallenge],
+    [approve, loadWallet, navigate],
+  );
+
+  const configure = useCallback(
+    async (
+      publicConfig: SocialConfig,
+      device?: { deviceToken: string; deviceEncryptionKey: string },
+    ) => {
+      (globalThis as typeof globalThis & { Buffer?: typeof Buffer }).Buffer ??= Buffer;
+      const { W3SSdk } = await import("@circle-fin/w3s-pw-web-sdk");
+      const instance = new W3SSdk(
+        {
+          appSettings: { appId: publicConfig.appId },
+          ...(device
+            ? {
+                loginConfigs: {
+                  ...device,
+                  google: {
+                    clientId: publicConfig.googleClientId,
+                    redirectUri: window.location.origin,
+                    selectAccountPrompt: true,
+                  },
+                },
+              }
+            : {}),
+        },
+        (loginError, result) => {
+          if (loginError) {
+            setError(loginError.message);
+            setSessionStatus("error");
+            setOperationState("failed");
+          } else if (result && "oAuthInfo" in result) {
+            void completeSocialLogin(result);
+          }
+        },
+      );
+      sdk.current = instance;
+    },
+    [completeSocialLogin],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const publicConfig = await request<SocialConfig | { configured: false }>(
+          "/api/circle/social/config",
+          "GET",
+        );
+        if (!publicConfig.configured) throw new Error("Circle Google login is not configured.");
+        config.current = publicConfig;
+        const saved = sessionStorage.getItem(DEVICE_SESSION_KEY);
+        const device = saved
+          ? (JSON.parse(saved) as { deviceToken: string; deviceEncryptionKey: string })
+          : undefined;
+        await configure(publicConfig, device);
+        if (!cancelled) setSessionStatus("disconnected");
+      } catch (cause) {
+        if (cancelled) return;
+        setError(cause instanceof Error ? cause.message : "Unable to initialize Circle login.");
+        setSessionStatus("error");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [configure]);
+
+  const connect = useCallback(async (next = "/dashboard/business") => {
+    if (!sdk.current || !config.current) throw new Error("Circle Google login is not ready.");
+    setError(null);
+    setSessionStatus("onboarding");
+    setOperationState("preparing");
+    try {
+      const deviceId = await sdk.current.getDeviceId();
+      const device = await request<{ deviceToken: string; deviceEncryptionKey: string }>(
+        "/api/circle/social/device-token",
+        "POST",
+        { deviceId },
+      );
+      sessionStorage.setItem(DEVICE_SESSION_KEY, JSON.stringify(device));
+      sessionStorage.setItem(NEXT_ROUTE_KEY, safeNext(next));
+      sdk.current.updateConfigs({
+        appSettings: { appId: config.current.appId },
+        loginConfigs: {
+          ...device,
+          google: {
+            clientId: config.current.googleClientId,
+            redirectUri: window.location.origin,
+            selectAccountPrompt: true,
+          },
+        },
+      });
+      await sdk.current.performLogin("Google" as never);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Unable to start Google login.";
+      setError(message);
+      setSessionStatus("error");
+      setOperationState("failed");
+      throw cause;
+    }
+  }, []);
+
+  const refresh = useCallback(
+    async () => (session ? loadWallet(session.userToken, session.encryptionKey) : null),
+    [loadWallet, session],
   );
 
   const execute = useCallback(
     async (action: MorrowCircleAction) => {
-      if (!session) throw new Error("Connect a Circle wallet first.");
+      if (!session) throw new Error("Sign in with Google first.");
       setError(null);
       setOperationState("preparing");
       try {
-        const challenge = await json<{ challengeId: string }>("/api/circle/challenge", {
+        const challenge = await request<{ challengeId: string }>("/api/circle/challenge", "POST", {
           userToken: session.userToken,
           walletId: session.walletId,
+          intentId: crypto.randomUUID(),
           action,
         });
         setOperationState("awaiting_approval");
-        const result = (await executeChallenge(challenge.challengeId)) as ChallengeExecutionResult;
-        setOperationState("submitted");
+        const result = (await approve(challenge.challengeId)) as {
+          data?: { transactionHash?: string; txHash?: string; transactionId?: string; id?: string };
+        };
+        setOperationState("confirming");
         await refresh();
         setOperationState("confirmed");
-        return { txHash: result?.data?.transactionHash ?? result?.data?.txHash };
+        return {
+          challengeId: challenge.challengeId,
+          transactionId: result.data?.transactionId ?? result.data?.id,
+          txHash: result.data?.transactionHash ?? result.data?.txHash,
+        };
       } catch (cause) {
         const message =
           cause instanceof Error ? cause.message : "Circle transaction was not completed.";
         setError(message);
-        setOperationState("failed");
+        setOperationState(message.toLowerCase().includes("cancel") ? "cancelled" : "failed");
         throw cause;
       }
     },
-    [executeChallenge, refresh, session],
+    [approve, refresh, session],
   );
 
-  const value = useMemo<CircleWalletContextValue>(
+  const disconnect = useCallback(() => {
+    sdk.current = null;
+    sessionStorage.removeItem(DEVICE_SESSION_KEY);
+    sessionStorage.removeItem(NEXT_ROUTE_KEY);
+    setSession(null);
+    setSessionStatus("disconnected");
+    setOperationState("idle");
+    setError(null);
+    if (config.current) void configure(config.current);
+  }, [configure]);
+
+  const value = useMemo<Context>(
     () => ({
       session,
+      sessionStatus,
       operationState,
       error,
       connect,
       refresh,
       execute,
-      disconnect: () => {
-        sdk.current = null;
-        setSession(null);
-        setOperationState("idle");
-        setError(null);
-      },
+      disconnect,
     }),
-    [connect, error, execute, operationState, refresh, session],
+    [session, sessionStatus, operationState, error, connect, refresh, execute, disconnect],
   );
-
   return <CircleWalletContext.Provider value={value}>{children}</CircleWalletContext.Provider>;
 }
 

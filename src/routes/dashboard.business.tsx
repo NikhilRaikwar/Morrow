@@ -80,7 +80,7 @@ function BusinessDashboard() {
   const filtered = filter === "all" ? mine : mine.filter((i) => i.status === filter);
 
   const copyLink = (invoice: Invoice) => {
-    const link = `https://morrow.demo/accept/${invoice.id}`;
+    const link = `${window.location.origin}/invoice/${invoice.id}`;
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       void navigator.clipboard.writeText(link);
     }
@@ -204,7 +204,7 @@ function BusinessDashboard() {
             ))}
           </ul>
           <Disclaimer className="mt-4">
-            Mock business data. Filters apply to the invoice list below.
+            Results are filtered from the latest MorrowMarket state on Arc Testnet.
           </Disclaimer>
         </div>
       </div>

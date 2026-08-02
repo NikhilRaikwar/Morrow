@@ -1,4 +1,5 @@
-export type Role = "business" | "lender" | "buyer";
+export type Workspace = "business" | "lender" | "buyer";
+export type Role = Workspace;
 
 export type InvoiceStatus =
   | "awaiting_buyer"
@@ -43,6 +44,8 @@ export interface Invoice {
   ref: string;
   sellerName: string;
   buyerName: string;
+  sellerAddress: string;
+  buyerAddress: string;
   buyerEmail: string;
   description: string;
   industry: string;
@@ -51,8 +54,8 @@ export interface Invoice {
   issueDate: string;
   dueDate: string;
   status: InvoiceStatus;
-  riskCategory: RiskCategory;
-  buyerRating: "AAA" | "AA" | "A" | "BBB";
+  riskCategory: RiskCategory | null;
+  buyerRating: "AAA" | "AA" | "A" | "BBB" | null;
   maxCostApr: number;
   retentionPct: number;
   auctionDurationHours: number;

@@ -80,21 +80,33 @@ function BuyerDashboard() {
   const { state, acceptInvoice, rejectInvoice, payInvoice } = useMorrow();
 
   const pending = useMemo(
-    () => state.invoices.filter((i) => i.status === "awaiting_buyer"),
-    [state.invoices],
+    () =>
+      state.invoices.filter(
+        (i) =>
+          i.status === "awaiting_buyer" &&
+          i.buyerAddress.toLowerCase() === state.walletAddress.toLowerCase(),
+      ),
+    [state.invoices, state.walletAddress],
   );
   const obligations = useMemo(
     () =>
-      state.invoices.filter((i) =>
-        ["buyer_accepted", "auction_live", "funded", "partially_repaid", "overdue"].includes(
-          i.status,
-        ),
+      state.invoices.filter(
+        (i) =>
+          i.buyerAddress.toLowerCase() === state.walletAddress.toLowerCase() &&
+          ["buyer_accepted", "auction_live", "funded", "partially_repaid", "overdue"].includes(
+            i.status,
+          ),
       ),
-    [state.invoices],
+    [state.invoices, state.walletAddress],
   );
   const paid = useMemo(
-    () => state.invoices.filter((i) => i.status === "settled"),
-    [state.invoices],
+    () =>
+      state.invoices.filter(
+        (i) =>
+          i.status === "settled" &&
+          i.buyerAddress.toLowerCase() === state.walletAddress.toLowerCase(),
+      ),
+    [state.invoices, state.walletAddress],
   );
 
   const totalObligations = obligations.reduce((sum, i) => sum + outstanding(i), 0);

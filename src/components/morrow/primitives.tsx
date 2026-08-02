@@ -263,14 +263,6 @@ export function EmptyState({
   );
 }
 
-export function DemoBadge({ className }: { className?: string }) {
-  return (
-    <Pill tone="neutral" className={cn("border-dashed", className)}>
-      Simulated demo transaction
-    </Pill>
-  );
-}
-
 export function CardLink({
   to,
   params,

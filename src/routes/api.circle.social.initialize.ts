@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { getCircleWallet } from "@/lib/circle/user-wallet.server";
+import { initializeSocialWallet } from "@/lib/circle/user-wallet.server";
 
-export const Route = createFileRoute("/api/circle/wallet")({
+export const Route = createFileRoute("/api/circle/social/initialize")({
   server: {
     handlers: {
       POST: async ({ request }) => {
@@ -10,14 +10,14 @@ export const Route = createFileRoute("/api/circle/wallet")({
           const { userToken } = z
             .object({ userToken: z.string().min(1) })
             .parse(await request.json());
-          return Response.json(await getCircleWallet(userToken), {
+          return Response.json(await initializeSocialWallet(userToken), {
             headers: { "cache-control": "no-store" },
           });
         } catch (error) {
-          console.error("Circle wallet lookup failed", {
+          console.error("Circle social wallet initialization failed", {
             message: error instanceof Error ? error.message : "unknown",
           });
-          return Response.json({ error: "Unable to load Circle wallet." }, { status: 400 });
+          return Response.json({ error: "Unable to initialize the Arc wallet." }, { status: 400 });
         }
       },
     },

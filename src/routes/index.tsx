@@ -168,7 +168,7 @@ function Hero() {
       <div className="relative mx-auto grid w-full max-w-[1200px] gap-14 px-5 py-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center lg:py-24">
         <div className="animate-fade-up">
           <Pill tone="info" className="px-3 py-1.5">
-            Stablecoin credit infrastructure on Arc
+            Illustrative product walkthrough
           </Pill>
           <h1 className="mt-6 text-[40px] leading-[1.05] font-semibold tracking-[-0.03em] text-foreground sm:text-[56px]">
             Sell tomorrow's receivable for today's USDC.
@@ -184,13 +184,13 @@ function Hero() {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link to="/connect" search={{ next: "app" }}>
               <Button size="lg" className="gap-2">
-                Finance an invoice
+                Launch app
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
             <Link to="/market">
               <Button size="lg" variant="outline">
-                Explore market
+                View market
               </Button>
             </Link>
           </div>
@@ -307,8 +307,8 @@ function MarketPreview() {
       <div className="mx-auto w-full max-w-[1200px] px-5 py-16 sm:py-20">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <SectionHeading
-            eyebrow="Live market"
-            title="Buyer-accepted receivables open for funding"
+            eyebrow="Illustrative market preview"
+            title="How buyer-accepted receivables appear"
           />
           <Link to="/market">
             <Button variant="outline" className="gap-2">
@@ -348,7 +348,7 @@ function MarketPreview() {
           ))}
         </div>
         <Disclaimer className="mt-6">
-          Mock business and risk data. Risk assessment is illustrative and is not investment advice.
+          Illustrative product walkthrough only. Visit the public market for live Arc contract data.
         </Disclaimer>
       </div>
     </section>
@@ -386,13 +386,13 @@ function FinalCta() {
             Turn accepted invoices into working capital.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[15px] text-muted-foreground">
-            Run the full lifecycle in the demo: issue an invoice, collect buyer acceptance, take
-            competitive bids, and watch settlement execute on Arc.
+            Issue a receivable, collect buyer acceptance, take competitive bids, and settle with
+            Circle wallet approvals on Arc Testnet.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link to="/connect" search={{ next: "app" }}>
               <Button size="lg" className="gap-2">
-                Launch demo
+                Launch app
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>

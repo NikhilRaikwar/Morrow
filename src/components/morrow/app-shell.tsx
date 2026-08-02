@@ -1,9 +1,8 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
-  Bell,
-  ChevronDown,
   CircleDollarSign,
+  ExternalLink,
   FileText,
   HelpCircle,
   LayoutDashboard,
@@ -17,8 +16,6 @@ import {
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,234 +24,160 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { ARCSCAN_TESTNET_URL } from "@/config/arc";
 import { useMorrow } from "@/lib/morrow/store";
-import { relativeTime, usdc } from "@/lib/morrow/format";
-import type { Role } from "@/lib/morrow/types";
-import { Pill, Wordmark } from "./primitives";
+import type { Workspace } from "@/lib/morrow/types";
+import { usdc } from "@/lib/morrow/format";
+import { cn } from "@/lib/utils";
 import { EnvironmentBadge } from "./environment-badge";
-import { toast } from "sonner";
+import { Wordmark } from "./primitives";
 
-const ROLE_LABEL: Record<Role, string> = {
-  business: "Business",
-  lender: "Lender",
-  buyer: "Buyer",
-};
+const WORKSPACES: { id: Workspace; label: string; to: string }[] = [
+  { id: "business", label: "Business", to: "/dashboard/business" },
+  { id: "buyer", label: "Buyer", to: "/dashboard/buyer" },
+  { id: "lender", label: "Lender", to: "/dashboard/lender" },
+];
 
-const ROLE_HOME: Record<Role, string> = {
-  business: "/dashboard/business",
-  lender: "/dashboard/lender",
-  buyer: "/dashboard/buyer",
-};
-
-interface NavItem {
-  label: string;
-  to: string;
-  icon: typeof LayoutDashboard;
-  roles?: Role[];
-}
-
-function navItems(role: Role): NavItem[] {
-  const items: NavItem[] = [
-    { label: "Overview", to: ROLE_HOME[role], icon: LayoutDashboard },
-    { label: "Receivables Market", to: "/market", icon: Store },
-    { label: "Create Invoice", to: "/create-invoice", icon: FileText, roles: ["business"] },
-    { label: "My Invoices", to: ROLE_HOME[role], icon: CircleDollarSign },
+function navItems(workspace: Workspace) {
+  return [
+    {
+      label: "Overview",
+      to: WORKSPACES.find((item) => item.id === workspace)!.to,
+      icon: LayoutDashboard,
+    },
+    ...(workspace === "business"
+      ? [{ label: "Create receivable", to: "/create-invoice", icon: FileText }]
+      : []),
+    { label: "Public market", to: "/market", icon: Store },
     { label: "Portfolio", to: "/portfolio", icon: PieChart },
-    { label: "Activity", to: "/activity", icon: Activity },
+    { label: "Arc activity", to: "/activity", icon: Activity },
     { label: "Settings", to: "/settings", icon: Settings },
   ];
-  return items.filter((item) => !item.roles || item.roles.includes(role));
+}
+
+function WorkspaceTabs({ onNavigate }: { onNavigate?: () => void }) {
+  const { state, setRole } = useMorrow();
+  return (
+    <div
+      className="grid grid-cols-3 rounded-lg border border-border bg-surface p-1"
+      aria-label="Workspace navigation"
+    >
+      {WORKSPACES.map((workspace) => (
+        <Link
+          key={workspace.id}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          to={workspace.to as any}
+          onClick={() => {
+            setRole(workspace.id);
+            onNavigate?.();
+          }}
+          className={cn(
+            "rounded-md px-2 py-1.5 text-center text-[11.5px] font-medium transition-colors",
+            state.role === workspace.id
+              ? "bg-white text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {workspace.label}
+        </Link>
+      ))}
+    </div>
+  );
 }
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { state } = useMorrow();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const items = navItems(state.role);
-
+  const pathname = useRouterState({ select: (router) => router.location.pathname });
   return (
     <div className="flex h-full flex-col">
       <div className="px-5 py-5">
-        <Link to="/" className="inline-flex">
+        <Link to="/">
           <Wordmark />
         </Link>
       </div>
-
+      <div className="px-3 pb-4">
+        <p className="mb-2 px-1 text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground">
+          Workspace
+        </p>
+        <WorkspaceTabs onNavigate={onNavigate} />
+      </div>
       <nav className="flex-1 space-y-0.5 px-3">
-        {items.map((item, index) => {
-          const active = index === 0 ? pathname === item.to : pathname === item.to && index !== 0;
-          const isMyInvoices = item.label === "My Invoices";
-          return (
-            <Link
-              key={item.label}
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              to={item.to as any}
-              hash={isMyInvoices ? "invoices" : undefined}
-              onClick={onNavigate}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors",
-                active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          );
-        })}
+        {navItems(state.role).map((item) => (
+          <Link
+            key={item.label} // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            to={item.to as any}
+            onClick={onNavigate}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors",
+              pathname === item.to
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </Link>
+        ))}
       </nav>
-
       <div className="space-y-3 p-3">
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-pulse-soft rounded-full bg-success" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
-          </span>
-          <span className="text-[12px] font-medium text-foreground">Arc Testnet</span>
-          <span className="ml-auto text-[11px] text-muted-foreground">Live</span>
-        </div>
-
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="flex items-center gap-2">
             <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="num text-[12px] font-medium text-foreground">
+            <span className="num text-[12px] font-medium">
               {state.walletAddress
                 ? `${state.walletAddress.slice(0, 6)}…${state.walletAddress.slice(-4)}`
-                : "Connect Circle Wallet"}
+                : "Disconnected"}
             </span>
           </div>
-          <p className="num mt-1.5 text-[15px] font-semibold text-foreground">
-            {usdc(state.balances[state.role])}{" "}
+          <p className="num mt-1.5 text-[15px] font-semibold">
+            {usdc(state.unified.arc)}{" "}
             <span className="text-[11px] font-medium text-muted-foreground">USDC</span>
           </p>
-          <p className="text-[11px] text-muted-foreground">{ROLE_LABEL[state.role]} wallet</p>
         </div>
-
         <a
           href="https://developers.circle.com"
           target="_blank"
           rel="noreferrer noopener"
-          className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12.5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12.5px] text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <HelpCircle className="h-4 w-4" />
-          Help and documentation
+          Circle wallet docs
         </a>
       </div>
     </div>
   );
 }
 
-export function RoleSwitcher({ compact }: { compact?: boolean }) {
-  const { state, setRole } = useMorrow();
-  const navigate = useNavigate();
-
-  const change = (role: Role) => {
-    setRole(role);
-    toast.success(`Switched to ${ROLE_LABEL[role]} view`, {
-      description: "Permissions are enforced by the connected Arc wallet and MorrowMarket.",
-    });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    navigate({ to: ROLE_HOME[role] as any });
-  };
-
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-2">
-            <span className="hidden text-[11px] font-normal text-muted-foreground sm:inline">
-              Market role
-            </span>
-            <span className="text-[13px] font-medium">{ROLE_LABEL[state.role]}</span>
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-60">
-          <DropdownMenuLabel className="text-[11px] tracking-wide text-muted-foreground uppercase">
-            Switch market role
-          </DropdownMenuLabel>
-          {(["business", "lender", "buyer"] as Role[]).map((role) => (
-            <DropdownMenuItem key={role} onSelect={() => change(role)} className="gap-2">
-              <span className="flex-1">{ROLE_LABEL[role]}</span>
-              {state.role === role ? <Pill tone="info">Active</Pill> : null}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
-  );
-}
-
-function Notifications() {
-  const { state } = useMorrow();
-  const recent = state.activity.slice(0, 6);
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
-          <Bell className="h-4 w-4" />
-          {recent.length > 0 ? (
-            <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
-          ) : null}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
-        <div className="border-b border-border px-4 py-3">
-          <p className="text-[13px] font-semibold">Notifications</p>
-          <p className="text-[11px] text-muted-foreground">Arc Testnet activity</p>
-        </div>
-        <ul className="max-h-80 divide-y divide-border overflow-y-auto">
-          {recent.map((event) => (
-            <li key={event.id} className="px-4 py-3">
-              <p className="text-[13px] font-medium text-foreground">{event.title}</p>
-              <p className="num text-[11px] text-muted-foreground">
-                {event.invoiceRef} · {relativeTime(event.ts)}
-              </p>
-            </li>
-          ))}
-        </ul>
-        <div className="border-t border-border p-2">
-          <Link to="/activity">
-            <Button variant="ghost" size="sm" className="w-full">
-              View all activity
-            </Button>
-          </Link>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 function GlobalSearch() {
   const { state } = useMorrow();
-  const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const results = useMemo(() => {
-    if (query.trim().length < 2) return [];
-    const q = query.toLowerCase();
-    return state.invoices
-      .filter(
-        (i) =>
-          i.ref.toLowerCase().includes(q) ||
-          i.buyerName.toLowerCase().includes(q) ||
-          i.sellerName.toLowerCase().includes(q),
-      )
-      .slice(0, 5);
-  }, [query, state.invoices]);
-
+  const results = useMemo(
+    () =>
+      query.trim().length < 2
+        ? []
+        : state.invoices
+            .filter((invoice) =>
+              [invoice.ref, invoice.buyerName, invoice.sellerName]
+                .join(" ")
+                .toLowerCase()
+                .includes(query.toLowerCase()),
+            )
+            .slice(0, 5),
+    [query, state.invoices],
+  );
   return (
     <div className="relative hidden md:block">
-      <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
       <Input
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search invoices, buyers"
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Search onchain receivables"
         className="h-9 w-64 pl-9 text-[13px]"
       />
       {results.length > 0 ? (
-        <div className="absolute top-11 left-0 z-50 w-80 overflow-hidden rounded-xl border border-border bg-popover shadow-float">
+        <div className="absolute left-0 top-11 z-50 w-80 overflow-hidden rounded-xl border border-border bg-popover shadow-float">
           {results.map((invoice) => (
             <button
               key={invoice.id}
@@ -266,12 +189,56 @@ function GlobalSearch() {
               className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-muted"
             >
               <span className="num text-[13px] font-medium">{invoice.ref}</span>
-              <span className="text-[12px] text-muted-foreground">{invoice.buyerName}</span>
+              <span className="num text-[12px] text-muted-foreground">{invoice.buyerName}</span>
             </button>
           ))}
         </div>
       ) : null}
     </div>
+  );
+}
+
+function AccountMenu() {
+  const { state, disconnectWallet } = useMorrow();
+  const navigate = useNavigate();
+  const address = state.walletAddress;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2">
+          <span className="grid h-5 w-5 place-items-center rounded-full bg-primary text-[9px] font-bold text-white">
+            {address.slice(2, 4).toUpperCase()}
+          </span>
+          <span className="num hidden text-[12px] sm:inline">
+            {address.slice(0, 6)}…{address.slice(-4)}
+          </span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuLabel>
+          <span className="block text-[11px] text-muted-foreground">
+            Circle wallet on Arc Testnet
+          </span>
+          <span className="num mt-1 block text-[12px]">{address}</span>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <a href={`${ARCSCAN_TESTNET_URL}/address/${address}`} target="_blank" rel="noreferrer">
+            View on Arcscan <ExternalLink className="ml-auto h-3.5 w-3.5" />
+          </a>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => navigate({ to: "/settings" })}>Settings</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={() => {
+            disconnectWallet();
+            navigate({ to: "/" });
+          }}
+        >
+          Disconnect
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -282,29 +249,33 @@ export function AppShell({
   children: ReactNode;
   requireConnection?: boolean;
 }) {
-  const { state, hydrated, connectWallet } = useMorrow();
+  const { state, hydrated } = useMorrow();
+  const pathname = useRouterState({ select: (router) => router.location.pathname });
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-
   useEffect(() => {
-    if (!hydrated || !requireConnection) return;
-    if (!state.connected) navigate({ to: "/connect", search: { next: "app" } });
-  }, [hydrated, requireConnection, state.connected, navigate]);
-
+    if (hydrated && requireConnection && !state.connected && typeof window !== "undefined") {
+      window.location.replace(`/connect?next=${encodeURIComponent(pathname)}`);
+    }
+  }, [hydrated, requireConnection, state.connected, pathname]);
+  if (requireConnection && (!hydrated || !state.connected))
+    return (
+      <div className="grid min-h-screen place-items-center bg-white">
+        <p className="text-[13px] text-muted-foreground">Restoring Circle wallet session…</p>
+      </div>
+    );
   return (
     <div className="min-h-screen bg-background">
       <EnvironmentBadge />
-
       <div className="flex">
         <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 border-r border-border bg-sidebar lg:block">
           <SidebarNav />
         </aside>
-
         <div className="min-w-0 flex-1">
-          <header className="sticky top-0 z-40 flex h-[60px] items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur-md sm:px-6">
+          <header className="sticky top-0 z-40 flex h-[60px] items-center gap-3 border-b border-border bg-background/90 px-4 backdrop-blur-md sm:px-6">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu">
+                <Button variant="ghost" size="icon" className="lg:hidden">
                   <Menu className="h-4 w-4" />
                 </Button>
               </SheetTrigger>
@@ -313,33 +284,16 @@ export function AppShell({
                 <SidebarNav onNavigate={() => setMobileOpen(false)} />
               </SheetContent>
             </Sheet>
-
             <GlobalSearch />
-
             <div className="ml-auto flex items-center gap-2 sm:gap-3">
               <div className="hidden items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 sm:flex">
                 <CircleDollarSign className="h-3.5 w-3.5 text-primary" />
-                <span className="num text-[13px] font-semibold">
-                  {usdc(state.balances[state.role])}
-                </span>
-                <span className="text-[11px] font-medium text-muted-foreground">USDC</span>
+                <span className="num text-[13px] font-semibold">{usdc(state.unified.arc)}</span>
+                <span className="text-[11px] text-muted-foreground">USDC</span>
               </div>
-              <Notifications />
-              <RoleSwitcher />
-              <button
-                type="button"
-                onClick={() => {
-                  if (!state.connected) connectWallet();
-                  navigate({ to: "/settings" });
-                }}
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-foreground text-[12px] font-semibold text-background"
-                aria-label="Account settings"
-              >
-                AR
-              </button>
+              <AccountMenu />
             </div>
           </header>
-
           <main className="mx-auto w-full max-w-[1240px] px-4 py-6 sm:px-6 sm:py-8">
             {children}
           </main>

@@ -46,8 +46,6 @@ export function HeroAuctionCard() {
   const [count, setCount] = useState(reduced ? BIDS.length : 0);
   const [live, setLive] = useState(reduced);
   const [seconds, setSeconds] = useState(COUNTDOWN_START);
-  const [running, setRunning] = useState(true);
-  const [visible, setVisible] = useState(true);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [cycle, setCycle] = useState(0);
 
@@ -58,18 +56,7 @@ export function HeroAuctionCard() {
     }
   }, [reduced]);
 
-  // pause when off-screen
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), {
-      threshold: 0.25,
-    });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  const active = running && visible && !reduced;
+  const active = !reduced;
 
   // the loop
   useEffect(() => {
@@ -117,9 +104,7 @@ export function HeroAuctionCard() {
   return (
     <div className="animate-fade-up [animation-delay:120ms]" ref={containerRef}>
       <div
-        onMouseEnter={() => setRunning(false)}
         onMouseLeave={() => {
-          setRunning(true);
           setTilt({ x: 0, y: 0 });
         }}
         onMouseMove={onMove}
@@ -267,18 +252,19 @@ export function HeroAuctionCard() {
           </div>
         </div>
 
-        <Link to="/invoice/$id" params={{ id: "inv-2048" }} className="mt-6 block">
+        <Link to="/market" className="mt-6 block">
           <Button
             key={`b-${cycle}-${complete}`}
             className={cn("w-full gap-2", complete && !reduced && "animate-cta-glow")}
           >
-            View auction
+            View live market
             <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
 
         <Disclaimer className="mt-4">
-          Arc Testnet demo. Mock business and risk data, test USDC only.
+          Illustrative product walkthrough. Sample participants and test-USDC amounts are not live
+          market data.
         </Disclaimer>
       </div>
     </div>

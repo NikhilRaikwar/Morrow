@@ -10,7 +10,7 @@
   <a href="https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D"><img src="https://img.shields.io/badge/Arc-Testnet-2563EB?style=flat-square" alt="Arc Testnet" /></a>
   <a href="https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D"><img src="https://img.shields.io/badge/Contract-Verified-16A34A?style=flat-square" alt="Verified contract" /></a>
   <img src="https://img.shields.io/badge/Settlement-USDC-2775CA?style=flat-square" alt="USDC settlement" />
-  <img src="https://img.shields.io/badge/Wallets-Circle%20PIN-7C3AED?style=flat-square" alt="Circle PIN wallets" />
+  <img src="https://img.shields.io/badge/Wallets-Circle%20Social%20Login-7C3AED?style=flat-square" alt="Circle social login wallets" />
   <img src="https://img.shields.io/badge/License-MIT-111827?style=flat-square" alt="MIT license" />
 </p>
 
@@ -30,7 +30,7 @@ No volatile collateral, manual lender reconciliation, or opaque payment routing.
 
 ## Why Arc + USDC
 
-Morrow treats USDC as the unit of account from the first bid to final settlement. Arc gives that workflow USDC-denominated gas and rapid finality; USDC makes advances, escrow, repayment, and accounting legible in the same currency. Circle user-controlled wallets add PIN-approved actions without asking a business, buyer, or lender to manage a seed phrase.
+Morrow treats USDC as the unit of account from the first bid to final settlement. Arc gives that workflow USDC-denominated gas and rapid finality; USDC makes advances, escrow, repayment, and accounting legible in the same currency. Circle user-controlled wallets add Google authentication and explicit approvals without asking a business, buyer, or lender to manage a seed phrase.
 
 ## How Morrow works
 
@@ -66,26 +66,26 @@ stateDiagram-v2
 
 ## What is live on Arc Testnet
 
-| Item | Status |
-| --- | --- |
-| MorrowMarket v1 | [Verified on Arcscan](https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D) |
-| Deployment | [View transaction](https://testnet.arcscan.app/tx/0xac94f5841769b13a59c1ad974b95bf3e5536cc3b73906bbd0688ff0ce282ac2e) |
-| USDC asset | Canonical Arc ERC-20 USDC `0x3600000000000000000000000000000000000000` (6 decimals) |
-| Market actions | Create, accept/reject, open/finalize/cancel auction, approve + bid, refund, and repay |
-| Dashboard data | Arc RPC reads plus decoded MorrowMarket events — no seeded invoice data |
-| Wallet approval | Circle User-Controlled Wallet PIN challenges, with server-side action allowlisting |
-| Notifications | Signed Circle webhook endpoint; Arc receipt/event state remains authoritative |
+| Item            | Status                                                                                                                |
+| --------------- | --------------------------------------------------------------------------------------------------------------------- |
+| MorrowMarket v1 | [Verified on Arcscan](https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D)                 |
+| Deployment      | [View transaction](https://testnet.arcscan.app/tx/0xac94f5841769b13a59c1ad974b95bf3e5536cc3b73906bbd0688ff0ce282ac2e) |
+| USDC asset      | Canonical Arc ERC-20 USDC `0x3600000000000000000000000000000000000000` (6 decimals)                                   |
+| Market actions  | Create, accept/reject, open/finalize/cancel auction, approve + bid, refund, and repay                                 |
+| Dashboard data  | Arc RPC reads plus decoded MorrowMarket events — no seeded invoice data                                               |
+| Wallet approval | Circle User-Controlled Wallet social login and confirmation challenges, with server-side action allowlisting          |
+| Notifications   | Signed Circle webhook endpoint; Arc receipt/event state remains authoritative                                         |
 
 ## Use it end to end
 
-1. Open **Connect** and create/access an Arc Testnet Circle wallet. Complete the Circle PIN approval.
+1. Open **Connect**, authenticate with Google, and create/access an Arc Testnet Circle wallet.
 2. As the business, create a receivable with the buyer’s Arc wallet address, due date, face value, advance request, and APR ceiling.
 3. In a separate Circle user/browser profile, the buyer accepts the receivable.
 4. The business opens the auction. Lenders approve canonical Arc USDC, then place bids in separate profiles.
 5. The business finalizes a fully funded auction. Morrow deterministically selects up to 32 bids by APR, then timestamp and bid index.
 6. The buyer approves USDC and repays. The onchain contract distributes the payment waterfall and the dashboard refreshes directly from Arc events.
 
-Every value-moving action is created by the server from a fixed contract/ABI allowlist, approved by the user through Circle PIN, then confirmed through Arc state. The browser never receives a private key, Circle API key, entity secret, or arbitrary calldata capability.
+Every value-moving action is created by the server from a fixed contract/ABI allowlist, approved through Circle's confirmation UI, then confirmed through Arc state. The browser never receives a private key, Circle API key, entity secret, or arbitrary calldata capability.
 
 ## Operating Morrow locally
 
@@ -119,4 +119,3 @@ Circle server credentials belong only in server environment variables. Never use
 - Test USDC only. No KYC/KYB, credit scoring, invoice verification, collections, or production compliance is provided.
 
 Read [SECURITY.md](./SECURITY.md) for the threat model and [LICENSE](./LICENSE) for the MIT license.
-

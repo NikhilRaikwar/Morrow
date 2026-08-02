@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
-import { AppShell, PageHeader, RoleSwitcher } from "@/components/morrow/app-shell";
+import { AppShell, PageHeader } from "@/components/morrow/app-shell";
 import { Amount, Disclaimer, KeyValue, Pill } from "@/components/morrow/primitives";
 import { Button } from "@/components/ui/button";
 import { useMorrow } from "@/lib/morrow/store";
@@ -60,8 +60,22 @@ function SettingsPage() {
             The selected view changes navigation only. MorrowMarket validates the seller, buyer, and
             lender address on every lifecycle action.
           </p>
-          <div className="mt-4">
-            <RoleSwitcher />
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link to="/dashboard/business">
+              <Button variant="outline" size="sm">
+                Business
+              </Button>
+            </Link>
+            <Link to="/dashboard/buyer">
+              <Button variant="outline" size="sm">
+                Buyer
+              </Button>
+            </Link>
+            <Link to="/dashboard/lender">
+              <Button variant="outline" size="sm">
+                Lender
+              </Button>
+            </Link>
           </div>
         </section>
       </div>

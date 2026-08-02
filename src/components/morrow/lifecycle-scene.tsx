@@ -71,11 +71,11 @@ function useSectionVisible<T extends HTMLElement>() {
 }
 
 export function LifecycleScene() {
-  const { ref, visible } = useSectionVisible<HTMLDivElement>();
+  const { ref } = useSectionVisible<HTMLDivElement>();
   const reduced = usePrefersReducedMotion();
   const [stage, setStage] = useState(0);
 
-  const playing = visible && !reduced;
+  const playing = !reduced;
 
   useEffect(() => {
     if (!playing) return;

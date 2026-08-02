@@ -42,7 +42,7 @@ export function getMorrowPublicConfig(
 
   return {
     mode: "arc",
-    arcRpcUrl: parsed.VITE_ARC_RPC_URL,
+    arcRpcUrl: typeof window === "undefined" ? parsed.VITE_ARC_RPC_URL : "/api/arc/rpc",
     arcChainId: parsed.VITE_ARC_CHAIN_ID,
     marketAddress: getAddress(parsed.VITE_MORROW_MARKET_ADDRESS),
   };

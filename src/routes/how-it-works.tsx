@@ -133,8 +133,8 @@ function HowItWorksPage() {
           </p>
           <WaterfallBars className="mt-7" total={10_000} legs={DEMO_LEGS} />
           <Disclaimer className="mt-6">
-            Checkpoint 2 uses simulated transactions and browser-local state. Arc Testnet contracts
-            and test USDC settlement are planned for the final MVP.
+            Illustrative values. Live actions require a Google-authenticated Circle wallet and
+            execute against MorrowMarket on Arc Testnet.
           </Disclaimer>
         </section>
 

@@ -9,15 +9,6 @@ import { getCircleServerConfig } from "./config.server";
 
 const uuid = () => crypto.randomUUID();
 
-export type CircleWalletSession = {
-  userId: string;
-  userToken: string;
-  encryptionKey: string;
-  walletId?: string;
-  address?: `0x${string}`;
-  challengeId?: string;
-};
-
 export const actionSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("approveUsdc"),
@@ -78,41 +69,38 @@ function marketAddress() {
   return config.marketAddress;
 }
 
-export async function beginCircleWallet(userId: string): Promise<CircleWalletSession> {
+export async function createSocialDeviceToken(deviceId: string) {
+  const result = await client().createDeviceTokenForSocialLogin({
+    deviceId,
+    idempotencyKey: uuid(),
+  });
+  const deviceToken = result.data?.deviceToken;
+  const deviceEncryptionKey = result.data?.deviceEncryptionKey;
+  if (!deviceToken || !deviceEncryptionKey) {
+    throw new Error("Circle did not return social-login device credentials.");
+  }
+  return { deviceToken, deviceEncryptionKey };
+}
+
+export async function initializeSocialWallet(userToken: string) {
   const sdk = client();
-  try {
-    await sdk.createUser({ userId, idempotencyKey: uuid() });
-  } catch (error) {
-    // Circle returns a conflict for an existing user. Fetching a token below is
-    // authoritative and prevents account enumeration in the browser response.
-    console.info("Circle user already exists or create was rejected", { requestId: uuid() });
-  }
-
-  const token = await sdk.createUserToken({ userId });
-  const userToken = token.data?.userToken;
-  const encryptionKey = token.data?.encryptionKey;
-  if (!userToken || !encryptionKey) throw new Error("Circle did not return a user session.");
-
   const wallets = await sdk.listWallets({ userToken, blockchain: "ARC-TESTNET" });
-  const wallet = (wallets.data?.wallets ?? [])[0] as { id?: string; address?: string } | undefined;
-  if (wallet?.id && wallet.address && isAddress(wallet.address)) {
-    return {
-      userId,
-      userToken,
-      encryptionKey,
-      walletId: wallet.id,
-      address: getAddress(wallet.address),
-    };
+  const existing = (wallets.data?.wallets ?? [])[0] as
+    { id?: string; address?: string; blockchain?: string } | undefined;
+  if (existing?.id && existing.address && isAddress(existing.address)) {
+    return { wallet: await getCircleWallet(userToken) };
   }
 
-  const setup = await sdk.createUserPinWithWallets({
+  const initialized = await sdk.createWallet({
     userToken,
     blockchains: ["ARC-TESTNET"],
     accountType: "EOA",
     idempotencyKey: uuid(),
   });
-  if (!setup.data?.challengeId) throw new Error("Circle did not return a wallet setup challenge.");
-  return { userId, userToken, encryptionKey, challengeId: setup.data.challengeId };
+  if (!initialized.data?.challengeId) {
+    throw new Error("Circle did not return a social wallet initialization challenge.");
+  }
+  return { challengeId: initialized.data.challengeId };
 }
 
 export async function getCircleWallet(userToken: string) {
@@ -198,6 +186,7 @@ export async function createMorrowChallenge(
   userToken: string,
   walletId: string,
   action: MorrowCircleAction,
+  intentId: string,
 ) {
   const sdk = client();
   const call = contractCall(action);
@@ -211,7 +200,7 @@ export async function createMorrowChallenge(
     ...call,
     walletId,
     userToken,
-    idempotencyKey: uuid(),
+    idempotencyKey: intentId,
     fee,
   });
   if (!challenge.data?.challengeId)

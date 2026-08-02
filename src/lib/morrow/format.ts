@@ -174,6 +174,7 @@ export function isMarketVisible(invoice: Invoice): boolean {
 }
 
 export function riskLabel(risk: Invoice["riskCategory"]): string {
+  if (!risk) return "Unrated";
   if (risk === "low") return "Low risk";
   if (risk === "low-moderate") return "Low–moderate risk";
   return "Moderate risk";

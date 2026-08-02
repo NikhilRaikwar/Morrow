@@ -1,321 +1,158 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Clock3, Filter, Layers, TrendingUp } from "lucide-react";
+import { ArrowRight, FileSearch, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { AppShell, PageHeader } from "@/components/morrow/app-shell";
-import { BidDialog } from "@/components/morrow/bid-panel";
-import {
-  Amount,
-  Disclaimer,
-  EmptyState,
-  Pill,
-  ProgressBar,
-  StatCard,
-  StatusPill,
-} from "@/components/morrow/primitives";
+import { MarketingShell } from "@/components/morrow/marketing";
+import { StatusPill } from "@/components/morrow/primitives";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useMorrow } from "@/lib/morrow/store";
-import {
-  bestApr,
-  countdown,
-  formatDate,
-  fundedAmount,
-  fundedPct,
-  isMarketVisible,
-  riskLabel,
-  termDays,
-  usdc,
-  usdcCompact,
-} from "@/lib/morrow/format";
-import type { Invoice } from "@/lib/morrow/types";
-import { cn } from "@/lib/utils";
+import { bestApr, formatDate, fundedAmount, isMarketVisible, usdc } from "@/lib/morrow/format";
 
 export const Route = createFileRoute("/market")({
   head: () => ({
     meta: [
       { title: "Receivables market — Morrow" },
-      {
-        name: "description",
-        content:
-          "Browse buyer-accepted invoices open for funding. Compare yields, terms and buyer credit quality before you bid.",
-      },
-      { property: "og:title", content: "Morrow receivables market" },
-      {
-        property: "og:description",
-        content: "Short-duration, buyer-confirmed USDC yield on Arc.",
-      },
-      {
-        name: "keywords",
-        content:
-          "receivables market, invoice yield, USDC lending, buyer-accepted invoices, short duration credit",
-      },
-      { property: "og:url", content: "/market" },
-      { property: "og:image", content: "/morrow-og.jpg" },
-      { name: "twitter:image", content: "/morrow-og.jpg" },
+      { name: "description", content: "Explore buyer-accepted receivables funding on Arc." },
     ],
-    links: [{ rel: "canonical", href: "/market" }],
   }),
   component: MarketPage,
 });
 
-type SortKey = "yield" | "size" | "ending" | "term";
+function short(address: string) {
+  return address.length > 14 ? `${address.slice(0, 8)}…${address.slice(-6)}` : address;
+}
 
 function MarketPage() {
-  const { state } = useMorrow();
+  const { state, hydrated, refresh } = useMorrow();
   const [query, setQuery] = useState("");
-  const [risk, setRisk] = useState<string>("all");
-  const [sort, setSort] = useState<SortKey>("yield");
-  const [bidTarget, setBidTarget] = useState<Invoice | null>(null);
-
   const listings = useMemo(() => {
-    const base = state.invoices.filter(isMarketVisible);
-    const filtered = base.filter((invoice) => {
-      const matchesQuery =
-        query.trim().length === 0 ||
-        [invoice.ref, invoice.sellerName, invoice.buyerName, invoice.industry]
-          .join(" ")
-          .toLowerCase()
-          .includes(query.toLowerCase());
-      const matchesRisk = risk === "all" || invoice.riskCategory === risk;
-      return matchesQuery && matchesRisk;
-    });
-    return [...filtered].sort((a, b) => {
-      if (sort === "size") return b.advanceRequested - a.advanceRequested;
-      if (sort === "term") return termDays(a) - termDays(b);
-      if (sort === "ending") {
-        return (a.auctionEndsAt ?? "9").localeCompare(b.auctionEndsAt ?? "9");
-      }
-      return (bestApr(b) ?? b.maxCostApr) - (bestApr(a) ?? a.maxCostApr);
-    });
-  }, [state.invoices, query, risk, sort]);
-
-  const live = listings.filter((i) => i.status === "auction_live");
-  const totalAvailable = live.reduce(
-    (sum, i) => sum + Math.max(0, i.advanceRequested - fundedAmount(i)),
-    0,
-  );
-  const avgApr =
-    live.length > 0
-      ? live.reduce((sum, i) => sum + (bestApr(i) ?? i.maxCostApr), 0) / live.length
-      : 0;
-  const avgTerm =
-    live.length > 0 ? Math.round(live.reduce((sum, i) => sum + termDays(i), 0) / live.length) : 0;
+    const normalized = query.trim().toLowerCase();
+    return state.invoices
+      .filter(isMarketVisible)
+      .filter((invoice) =>
+        normalized
+          ? [invoice.ref, invoice.sellerName, invoice.buyerName]
+              .join(" ")
+              .toLowerCase()
+              .includes(normalized)
+          : true,
+      );
+  }, [query, state.invoices]);
 
   return (
-    <AppShell requireConnection={false}>
-      <PageHeader
-        title="Receivables market"
-        description="Every listing is a buyer-accepted invoice with a confirmed payment obligation."
-        actions={
-          <Link to="/portfolio">
-            <Button variant="outline">My portfolio</Button>
-          </Link>
-        }
-      />
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Open for funding"
-          value={<Amount value={totalAvailable} size="lg" />}
-          hint={`${live.length} live auctions`}
-          icon={<Layers className="h-3.5 w-3.5" />}
-          tone="primary"
-        />
-        <StatCard
-          label="Average yield"
-          value={
-            <span className="num text-[30px] font-semibold text-foreground">
-              {avgApr.toFixed(1)}%
-            </span>
-          }
-          hint="Best bid APR across live auctions"
-          icon={<TrendingUp className="h-3.5 w-3.5" />}
-          tone="success"
-        />
-        <StatCard
-          label="Average term"
-          value={<span className="num text-[30px] font-semibold text-foreground">{avgTerm}d</span>}
-          hint="Issue date to due date"
-          icon={<Clock3 className="h-3.5 w-3.5" />}
-          tone="info"
-        />
-        <StatCard
-          label="Your deployable USDC"
-          value={<Amount value={state.balances.lender} size="lg" />}
-          hint="Arc wallet balance"
-          icon={<Filter className="h-3.5 w-3.5" />}
-          tone="neutral"
-        />
-      </div>
-
-      <div className="mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card">
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by invoice, seller, buyer or industry"
-          className="h-9 max-w-[320px] flex-1"
-        />
-        <Select value={risk} onValueChange={setRisk}>
-          <SelectTrigger className="h-9 w-[168px]">
-            <SelectValue placeholder="Risk" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All risk bands</SelectItem>
-            <SelectItem value="low">Low risk</SelectItem>
-            <SelectItem value="low-moderate">Low–moderate</SelectItem>
-            <SelectItem value="moderate">Moderate</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-          <SelectTrigger className="h-9 w-[168px]">
-            <SelectValue placeholder="Sort" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="yield">Highest yield</SelectItem>
-            <SelectItem value="size">Largest size</SelectItem>
-            <SelectItem value="ending">Ending soonest</SelectItem>
-            <SelectItem value="term">Shortest term</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {listings.length === 0 ? (
-        <EmptyState
-          title="No matching receivables"
-          description="Adjust your filters, or check back when new invoices are accepted."
-        />
-      ) : (
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {listings.map((invoice, index) => (
-            <ListingCard
-              key={invoice.id}
-              invoice={invoice}
-              index={index}
-              onBid={() => setBidTarget(invoice)}
-            />
-          ))}
-        </div>
-      )}
-
-      <Disclaimer className="mt-6">
-        Mock listings on Arc Testnet. Risk bands and buyer ratings are illustrative.
-      </Disclaimer>
-
-      <BidDialog
-        invoice={bidTarget}
-        open={Boolean(bidTarget)}
-        onOpenChange={(open) => (open ? null : setBidTarget(null))}
-      />
-    </AppShell>
-  );
-}
-
-function ListingCard({
-  invoice,
-  index,
-  onBid,
-}: {
-  invoice: Invoice;
-  index: number;
-  onBid: () => void;
-}) {
-  const apr = bestApr(invoice) ?? invoice.maxCostApr;
-  const remaining = Math.max(0, invoice.advanceRequested - fundedAmount(invoice));
-  const live = invoice.status === "auction_live";
-
-  return (
-    <article
-      className="animate-fade-up flex flex-col rounded-xl border border-border bg-card p-5 shadow-card transition-all hover:-translate-y-0.5 hover:shadow-raised"
-      style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            to="/invoice/$id"
-            params={{ id: invoice.id }}
-            className="num text-[13.5px] font-semibold text-foreground hover:text-primary"
-          >
-            {invoice.ref}
-          </Link>
-          <p className="truncate text-[12.5px] text-muted-foreground">{invoice.industry}</p>
-        </div>
-        <StatusPill status={invoice.status} />
-      </div>
-
-      <div className="mt-4 flex items-end justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-            Advance sought
+    <MarketingShell>
+      <section className="mx-auto w-full max-w-[1480px] px-5 py-10 sm:px-8 sm:py-14">
+        <div className="max-w-3xl">
+          <h1 className="font-serif text-[42px] leading-tight tracking-[-0.03em] text-foreground sm:text-[52px]">
+            Receivables market
+          </h1>
+          <p className="mt-2 text-[16px] text-muted-foreground">
+            Explore buyer-accepted invoices funding on Arc.
           </p>
-          <Amount value={invoice.advanceRequested} size="md" suffix={null} />
-        </div>
-        <div className="text-right">
-          <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-            {live ? "Best bid" : "Cleared"}
+          <p className="mt-5 inline-flex items-center gap-2 text-[13px] font-medium text-muted-foreground">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" /> Arc Testnet
+            <span aria-hidden>·</span> Live MorrowMarket contract data
           </p>
-          <p className="num text-[22px] font-semibold text-success">{apr.toFixed(1)}%</p>
         </div>
-      </div>
 
-      <div className="mt-4">
-        <div className="mb-1.5 flex items-baseline justify-between text-[11.5px] text-muted-foreground">
-          <span className="num">{Math.round(fundedPct(invoice))}% funded</span>
-          <span className="num">{usdcCompact(remaining)} left</span>
+        <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-white shadow-card">
+          <div className="flex flex-wrap items-center gap-3 border-b border-border p-4">
+            <div className="relative min-w-[260px] flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search by receivable, seller or buyer address"
+                className="h-10 pl-10"
+              />
+            </div>
+            <Button variant="outline" onClick={() => void refresh()}>
+              Refresh Arc data
+            </Button>
+          </div>
+
+          {!hydrated ? (
+            <div className="px-6 py-20 text-center text-[14px] text-muted-foreground">
+              Reading MorrowMarket from Arc…
+            </div>
+          ) : listings.length === 0 ? (
+            <div className="px-6 py-20 text-center">
+              <FileSearch className="mx-auto h-8 w-8 text-muted-foreground" />
+              <h2 className="mt-4 text-[17px] font-semibold text-foreground">
+                No receivables are open for funding
+              </h2>
+              <p className="mx-auto mt-2 max-w-lg text-[13.5px] text-muted-foreground">
+                New buyer-accepted invoices will appear here from MorrowMarket on Arc.
+              </p>
+              <Link to="/connect" search={{ next: "lender" }} className="mt-6 inline-block">
+                <Button variant="outline">Connect to fund</Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1040px] border-collapse text-left">
+                <thead className="bg-surface text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="px-5 py-3">Receivable</th>
+                    <th className="px-5 py-3">Seller</th>
+                    <th className="px-5 py-3">Buyer</th>
+                    <th className="px-5 py-3">Face value</th>
+                    <th className="px-5 py-3">Advance</th>
+                    <th className="px-5 py-3">Best APR</th>
+                    <th className="px-5 py-3">Status</th>
+                    <th className="px-5 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {listings.map((invoice) => (
+                    <tr key={invoice.id} className="transition-colors hover:bg-surface/70">
+                      <td className="px-5 py-4">
+                        <p className="num text-[13.5px] font-semibold">{invoice.ref}</p>
+                        <p className="text-[11.5px] text-muted-foreground">
+                          Due {formatDate(invoice.dueDate)}
+                        </p>
+                      </td>
+                      <td className="num px-5 py-4 text-[13px]">{short(invoice.sellerName)}</td>
+                      <td className="num px-5 py-4 text-[13px]">{short(invoice.buyerName)}</td>
+                      <td className="num px-5 py-4 text-[13px] font-medium">
+                        {usdc(invoice.faceValue)} USDC
+                      </td>
+                      <td className="num px-5 py-4 text-[13px]">
+                        {usdc(invoice.advanceRequested)} USDC
+                      </td>
+                      <td className="num px-5 py-4 text-[13px] font-semibold text-primary">
+                        {bestApr(invoice)?.toFixed(2) ?? "—"}%
+                      </td>
+                      <td className="px-5 py-4">
+                        <StatusPill status={invoice.status} />
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <Link to="/invoice/$id" params={{ id: invoice.id }}>
+                          <Button variant="outline" size="sm" className="gap-1.5">
+                            View <ArrowRight className="h-3.5 w-3.5" />
+                          </Button>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="border-t border-border px-5 py-3 text-[11.5px] text-muted-foreground">
+                {usdc(
+                  listings.reduce(
+                    (sum, invoice) =>
+                      sum + Math.max(0, invoice.advanceRequested - fundedAmount(invoice)),
+                    0,
+                  ),
+                )}{" "}
+                USDC currently open across {listings.length} receivable
+                {listings.length === 1 ? "" : "s"}.
+              </p>
+            </div>
+          )}
         </div>
-        <ProgressBar value={fundedPct(invoice)} height={6} tone={live ? "primary" : "success"} />
-      </div>
-
-      <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-border pt-4 text-[12.5px]">
-        <Meta label="Buyer" value={invoice.buyerName} />
-        <Meta label="Rating" value={invoice.buyerRating} mono />
-        <Meta label="Term" value={`${termDays(invoice)} days`} mono />
-        <Meta label="Due" value={formatDate(invoice.dueDate)} />
-      </dl>
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Pill
-          tone={
-            invoice.riskCategory === "low"
-              ? "success"
-              : invoice.riskCategory === "moderate"
-                ? "warning"
-                : "info"
-          }
-        >
-          {riskLabel(invoice.riskCategory)}
-        </Pill>
-        {live && invoice.auctionEndsAt ? (
-          <Pill tone="neutral" dot>
-            Ends in {countdown(invoice.auctionEndsAt)}
-          </Pill>
-        ) : null}
-      </div>
-
-      <div className="mt-5 flex gap-2">
-        <Button className={cn("flex-1")} disabled={!live || remaining <= 0} onClick={onBid}>
-          {live ? (remaining > 0 ? "Place bid" : "Fully funded") : "Auction closed"}
-        </Button>
-        <Link to="/invoice/$id" params={{ id: invoice.id }}>
-          <Button variant="outline">Details</Button>
-        </Link>
-      </div>
-    </article>
-  );
-}
-
-function Meta({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div>
-      <dt className="text-[11px] text-muted-foreground">{label}</dt>
-      <dd className={cn("truncate font-medium text-foreground", mono && "num")}>{value}</dd>
-    </div>
+      </section>
+    </MarketingShell>
   );
 }

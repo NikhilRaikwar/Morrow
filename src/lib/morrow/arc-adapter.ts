@@ -26,11 +26,11 @@ export async function readArcMarket(config: MorrowPublicConfig, viewer?: string)
   if (!config.marketAddress) throw new Error("MorrowMarket address is not configured.");
   const client = createArcPublicClient(config.arcRpcUrl);
   const latest = await client.getBlockNumber();
-  const fromBlock = latest > 10_000n ? latest - 10_000n : 0n;
+  const fromBlock = latest > 9_999n ? latest - 9_999n : 0n;
   const logs = await client.getLogs({
     address: config.marketAddress,
     fromBlock,
-    toBlock: "latest",
+    toBlock: latest,
   });
   const events = logs.flatMap((log) => {
     try {
@@ -142,16 +142,18 @@ export async function readArcMarket(config: MorrowPublicConfig, viewer?: string)
         ref: `ARC-${id}`,
         sellerName: addressLabel(seller),
         buyerName: addressLabel(buyer),
-        buyerEmail: "Onchain buyer",
+        sellerAddress: seller,
+        buyerAddress: buyer,
+        buyerEmail: "",
         description: `Onchain receivable · digest ${digest.slice(0, 12)}…`,
-        industry: "Onchain receivable",
+        industry: "",
         faceValue: asNumber(faceValue),
         advanceRequested: asNumber(advanceRequested),
         issueDate: createdAt,
         dueDate: iso(dueDate),
         status: mapStatus(Number(status), dueDate, totalLenderPaid),
-        riskCategory: "moderate",
-        buyerRating: "BBB",
+        riskCategory: null,
+        buyerRating: null,
         maxCostApr: Number(maxAprBps) / 100,
         retentionPct: faceValue
           ? Math.max(0, (1 - Number(advanceRequested) / Number(faceValue)) * 100)
@@ -177,7 +179,7 @@ export async function readArcMarket(config: MorrowPublicConfig, viewer?: string)
           : null,
         advanceReleased: asNumber(fundedPrincipal),
         amountPaid: asNumber(totalRepaid),
-        poRef: "Stored offchain",
+        poRef: "",
         docHash: digest,
         poHash: digest,
         deliveryHash: digest,

@@ -24,7 +24,8 @@ MorrowMarket is deployed on **Arc Testnet only**. It is a hackathon MVP, not a p
 - Circle webhook uses raw-body ECDSA-SHA256 verification via Circle's per-delivery public key.
 - Circle API keys and deployer keys stay server/local only; no secret uses a `VITE_` prefix.
 - Circle transaction requests are server-side allowlisted to known MorrowMarket and canonical-USDC ABI signatures; the browser cannot select an arbitrary contract or calldata target.
-- Circle user tokens and encryption keys are held in browser memory for the active PIN session only and are never written to localStorage.
+- Circle user tokens and encryption keys are held in browser memory after Google authentication and are never written to localStorage or sessionStorage.
+- Only temporary device credentials and the post-login return route are kept in sessionStorage across the OAuth redirect; they are removed after login completes.
 
 ## Required checks before any new deployment
 
