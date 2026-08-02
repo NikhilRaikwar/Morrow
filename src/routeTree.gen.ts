@@ -23,6 +23,7 @@ import { Route as DashboardBusinessRouteImport } from './routes/dashboard.busine
 import { Route as DashboardBuyerRouteImport } from './routes/dashboard.buyer'
 import { Route as DashboardLenderRouteImport } from './routes/dashboard.lender'
 import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
+import { Route as ApiCircleWebhookRouteImport } from './routes/api.circle.webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,6 +95,11 @@ const InvoiceIdRoute = InvoiceIdRouteImport.update({
   path: '/invoice/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCircleWebhookRoute = ApiCircleWebhookRouteImport.update({
+  id: '/api/circle/webhook',
+  path: '/api/circle/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/buyer': typeof DashboardBuyerRoute
   '/dashboard/lender': typeof DashboardLenderRoute
   '/invoice/$id': typeof InvoiceIdRoute
+  '/api/circle/webhook': typeof ApiCircleWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/dashboard/buyer': typeof DashboardBuyerRoute
   '/dashboard/lender': typeof DashboardLenderRoute
   '/invoice/$id': typeof InvoiceIdRoute
+  '/api/circle/webhook': typeof ApiCircleWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/dashboard/buyer': typeof DashboardBuyerRoute
   '/dashboard/lender': typeof DashboardLenderRoute
   '/invoice/$id': typeof InvoiceIdRoute
+  '/api/circle/webhook': typeof ApiCircleWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/dashboard/buyer'
     | '/dashboard/lender'
     | '/invoice/$id'
+    | '/api/circle/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/dashboard/buyer'
     | '/dashboard/lender'
     | '/invoice/$id'
+    | '/api/circle/webhook'
   id:
     | '__root__'
     | '/'
@@ -193,6 +204,7 @@ export interface FileRouteTypes {
     | '/dashboard/buyer'
     | '/dashboard/lender'
     | '/invoice/$id'
+    | '/api/circle/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -210,6 +222,7 @@ export interface RootRouteChildren {
   DashboardBuyerRoute: typeof DashboardBuyerRoute
   DashboardLenderRoute: typeof DashboardLenderRoute
   InvoiceIdRoute: typeof InvoiceIdRoute
+  ApiCircleWebhookRoute: typeof ApiCircleWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -312,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvoiceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/circle/webhook': {
+      id: '/api/circle/webhook'
+      path: '/api/circle/webhook'
+      fullPath: '/api/circle/webhook'
+      preLoaderRoute: typeof ApiCircleWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -330,6 +350,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardBuyerRoute: DashboardBuyerRoute,
   DashboardLenderRoute: DashboardLenderRoute,
   InvoiceIdRoute: InvoiceIdRoute,
+  ApiCircleWebhookRoute: ApiCircleWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

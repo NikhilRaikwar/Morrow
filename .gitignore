@@ -22,6 +22,7 @@ dist-ssr
 # Solidity compiler artifacts
 contracts/out/
 contracts/cache/
+contracts/tools/
 
 # Wrangler / Cloudflare
 .wrangler/
