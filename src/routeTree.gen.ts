@@ -23,7 +23,11 @@ import { Route as DashboardBusinessRouteImport } from './routes/dashboard.busine
 import { Route as DashboardBuyerRouteImport } from './routes/dashboard.buyer'
 import { Route as DashboardLenderRouteImport } from './routes/dashboard.lender'
 import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
+import { Route as ApiCircleChallengeRouteImport } from './routes/api.circle.challenge'
+import { Route as ApiCircleWalletRouteImport } from './routes/api.circle.wallet'
 import { Route as ApiCircleWebhookRouteImport } from './routes/api.circle.webhook'
+import { Route as ApiCircleSessionStartRouteImport } from './routes/api.circle.session.start'
+import { Route as ApiCircleTransactionIdRouteImport } from './routes/api.circle.transaction.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -95,9 +99,29 @@ const InvoiceIdRoute = InvoiceIdRouteImport.update({
   path: '/invoice/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCircleChallengeRoute = ApiCircleChallengeRouteImport.update({
+  id: '/api/circle/challenge',
+  path: '/api/circle/challenge',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCircleWalletRoute = ApiCircleWalletRouteImport.update({
+  id: '/api/circle/wallet',
+  path: '/api/circle/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCircleWebhookRoute = ApiCircleWebhookRouteImport.update({
   id: '/api/circle/webhook',
   path: '/api/circle/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCircleSessionStartRoute = ApiCircleSessionStartRouteImport.update({
+  id: '/api/circle/session/start',
+  path: '/api/circle/session/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCircleTransactionIdRoute = ApiCircleTransactionIdRouteImport.update({
+  id: '/api/circle/transaction/$id',
+  path: '/api/circle/transaction/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -116,7 +140,11 @@ export interface FileRoutesByFullPath {
   '/dashboard/buyer': typeof DashboardBuyerRoute
   '/dashboard/lender': typeof DashboardLenderRoute
   '/invoice/$id': typeof InvoiceIdRoute
+  '/api/circle/challenge': typeof ApiCircleChallengeRoute
+  '/api/circle/wallet': typeof ApiCircleWalletRoute
   '/api/circle/webhook': typeof ApiCircleWebhookRoute
+  '/api/circle/session/start': typeof ApiCircleSessionStartRoute
+  '/api/circle/transaction/$id': typeof ApiCircleTransactionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -133,7 +161,11 @@ export interface FileRoutesByTo {
   '/dashboard/buyer': typeof DashboardBuyerRoute
   '/dashboard/lender': typeof DashboardLenderRoute
   '/invoice/$id': typeof InvoiceIdRoute
+  '/api/circle/challenge': typeof ApiCircleChallengeRoute
+  '/api/circle/wallet': typeof ApiCircleWalletRoute
   '/api/circle/webhook': typeof ApiCircleWebhookRoute
+  '/api/circle/session/start': typeof ApiCircleSessionStartRoute
+  '/api/circle/transaction/$id': typeof ApiCircleTransactionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -151,7 +183,11 @@ export interface FileRoutesById {
   '/dashboard/buyer': typeof DashboardBuyerRoute
   '/dashboard/lender': typeof DashboardLenderRoute
   '/invoice/$id': typeof InvoiceIdRoute
+  '/api/circle/challenge': typeof ApiCircleChallengeRoute
+  '/api/circle/wallet': typeof ApiCircleWalletRoute
   '/api/circle/webhook': typeof ApiCircleWebhookRoute
+  '/api/circle/session/start': typeof ApiCircleSessionStartRoute
+  '/api/circle/transaction/$id': typeof ApiCircleTransactionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -170,7 +206,11 @@ export interface FileRouteTypes {
     | '/dashboard/buyer'
     | '/dashboard/lender'
     | '/invoice/$id'
+    | '/api/circle/challenge'
+    | '/api/circle/wallet'
     | '/api/circle/webhook'
+    | '/api/circle/session/start'
+    | '/api/circle/transaction/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -187,7 +227,11 @@ export interface FileRouteTypes {
     | '/dashboard/buyer'
     | '/dashboard/lender'
     | '/invoice/$id'
+    | '/api/circle/challenge'
+    | '/api/circle/wallet'
     | '/api/circle/webhook'
+    | '/api/circle/session/start'
+    | '/api/circle/transaction/$id'
   id:
     | '__root__'
     | '/'
@@ -204,7 +248,11 @@ export interface FileRouteTypes {
     | '/dashboard/buyer'
     | '/dashboard/lender'
     | '/invoice/$id'
+    | '/api/circle/challenge'
+    | '/api/circle/wallet'
     | '/api/circle/webhook'
+    | '/api/circle/session/start'
+    | '/api/circle/transaction/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -222,7 +270,11 @@ export interface RootRouteChildren {
   DashboardBuyerRoute: typeof DashboardBuyerRoute
   DashboardLenderRoute: typeof DashboardLenderRoute
   InvoiceIdRoute: typeof InvoiceIdRoute
+  ApiCircleChallengeRoute: typeof ApiCircleChallengeRoute
+  ApiCircleWalletRoute: typeof ApiCircleWalletRoute
   ApiCircleWebhookRoute: typeof ApiCircleWebhookRoute
+  ApiCircleSessionStartRoute: typeof ApiCircleSessionStartRoute
+  ApiCircleTransactionIdRoute: typeof ApiCircleTransactionIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -325,11 +377,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvoiceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/circle/challenge': {
+      id: '/api/circle/challenge'
+      path: '/api/circle/challenge'
+      fullPath: '/api/circle/challenge'
+      preLoaderRoute: typeof ApiCircleChallengeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/circle/wallet': {
+      id: '/api/circle/wallet'
+      path: '/api/circle/wallet'
+      fullPath: '/api/circle/wallet'
+      preLoaderRoute: typeof ApiCircleWalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/circle/webhook': {
       id: '/api/circle/webhook'
       path: '/api/circle/webhook'
       fullPath: '/api/circle/webhook'
       preLoaderRoute: typeof ApiCircleWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/circle/session/start': {
+      id: '/api/circle/session/start'
+      path: '/api/circle/session/start'
+      fullPath: '/api/circle/session/start'
+      preLoaderRoute: typeof ApiCircleSessionStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/circle/transaction/$id': {
+      id: '/api/circle/transaction/$id'
+      path: '/api/circle/transaction/$id'
+      fullPath: '/api/circle/transaction/$id'
+      preLoaderRoute: typeof ApiCircleTransactionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -350,7 +430,11 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardBuyerRoute: DashboardBuyerRoute,
   DashboardLenderRoute: DashboardLenderRoute,
   InvoiceIdRoute: InvoiceIdRoute,
+  ApiCircleChallengeRoute: ApiCircleChallengeRoute,
+  ApiCircleWalletRoute: ApiCircleWalletRoute,
   ApiCircleWebhookRoute: ApiCircleWebhookRoute,
+  ApiCircleSessionStartRoute: ApiCircleSessionStartRoute,
+  ApiCircleTransactionIdRoute: ApiCircleTransactionIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

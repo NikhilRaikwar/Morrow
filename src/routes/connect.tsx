@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Wordmark, Pill, Disclaimer, Amount } from "@/components/morrow/primitives";
 import { useMorrow } from "@/lib/morrow/store";
+import { useCircleWallet } from "@/lib/circle/wallet-context";
+import { getMorrowPublicConfig } from "@/config/env";
 import { DEMO_WALLET_SHORT } from "@/lib/morrow/seed";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/morrow/types";
@@ -72,7 +74,14 @@ type Phase = "select" | "email" | "connecting" | "ready" | "role";
 
 function ConnectPage() {
   const { connectWallet, setRole } = useMorrow();
+  const {
+    connect: connectCircleWallet,
+    session: circleSession,
+    operationState,
+    error,
+  } = useCircleWallet();
   const navigate = useNavigate();
+  const live = getMorrowPublicConfig().mode === "arc";
   const [phase, setPhase] = useState<Phase>("select");
   const [step, setStep] = useState(0);
   const [email, setEmail] = useState("alex@asterstudio.co");
@@ -85,7 +94,23 @@ function ConnectPage() {
     [],
   );
 
-  const start = () => {
+  const start = async () => {
+    if (live) {
+      try {
+        setPhase("connecting");
+        setStep(0);
+        const wallet = await connectCircleWallet(email.trim().toLowerCase());
+        setStep(3);
+        setPhase("ready");
+        toast.success("Circle Wallet connected", {
+          description: `${wallet.address.slice(0, 6)}…${wallet.address.slice(-4)} · Arc Testnet`,
+        });
+        return;
+      } catch {
+        setPhase("email");
+        return;
+      }
+    }
     setPhase("connecting");
     setStep(0);
     timers.current.push(setTimeout(() => setStep(1), 400));
@@ -150,23 +175,29 @@ function ConnectPage() {
                 Connect to Morrow
               </h2>
               <p className="mt-2 text-[13.5px] text-muted-foreground">
-                No MetaMask required. This demo runs on Arc Testnet with mock balances.
+                {live
+                  ? "Create or access your Circle user-controlled wallet on Arc Testnet."
+                  : "No MetaMask required. This demo runs on Arc Testnet with mock balances."}
               </p>
 
               {phase === "email" ? (
                 <div className="mt-8 space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Work email</Label>
+                    <Label htmlFor="email">{live ? "Morrow user ID" : "Work email"}</Label>
                     <Input
                       id="email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@company.com"
+                      placeholder={live ? "you@company.com" : "you@company.com"}
                     />
                   </div>
-                  <Button className="w-full gap-2" onClick={start} disabled={!email.includes("@")}>
-                    Create wallet
+                  <Button
+                    className="w-full gap-2"
+                    onClick={() => void start()}
+                    disabled={live ? email.trim().length < 5 : !email.includes("@")}
+                  >
+                    {live ? "Continue with Circle" : "Create wallet"}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" className="w-full" onClick={() => setPhase("select")}>
@@ -179,7 +210,19 @@ function ConnectPage() {
                     <button
                       key={method.id}
                       type="button"
-                      onClick={() => (method.id === "email" ? setPhase("email") : start())}
+                      onClick={() => {
+                        if (live && method.id !== "email") {
+                          toast.info("Available in demo mode", {
+                            description: "Live Morrow uses Circle user-controlled wallets.",
+                          });
+                          return;
+                        }
+                        if (method.id === "email") {
+                          setPhase("email");
+                        } else {
+                          void start();
+                        }
+                      }}
                       className={cn(
                         "flex w-full items-center gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:shadow-raised",
                         method.recommended
@@ -205,7 +248,9 @@ function ConnectPage() {
               )}
 
               <Disclaimer className="mt-8">
-                Arc Testnet demo. Test USDC only. Not an investment product.
+                {live
+                  ? "Arc Testnet only. Circle PIN approval is required for every transaction."
+                  : "Arc Testnet demo. Test USDC only. Not an investment product."}
               </Disclaimer>
             </div>
           ) : null}
@@ -213,12 +258,18 @@ function ConnectPage() {
           {phase === "connecting" || phase === "ready" ? (
             <div className="animate-fade-up mt-8 lg:mt-0">
               <h2 className="text-[24px] font-semibold text-foreground">
-                {phase === "ready" ? "Wallet ready" : "Setting up your wallet"}
+                {phase === "ready"
+                  ? "Wallet ready"
+                  : live && operationState === "awaiting_approval"
+                    ? "Approve wallet setup"
+                    : "Setting up your wallet"}
               </h2>
               <p className="mt-2 text-[13.5px] text-muted-foreground">
                 {phase === "ready"
                   ? "Your Circle Wallet is connected to Arc Testnet."
-                  : "This takes about a second."}
+                  : live
+                    ? "Complete the Circle PIN prompt to authorize wallet setup."
+                    : "This takes about a second."}
               </p>
 
               <ol className="mt-8 space-y-1">
@@ -261,11 +312,15 @@ function ConnectPage() {
                 <div className="animate-scale-in mt-6 rounded-xl border border-border bg-card p-5 shadow-card">
                   <div className="flex items-center justify-between">
                     <span className="text-[12px] text-muted-foreground">Wallet</span>
-                    <span className="num text-[13px] font-medium">{DEMO_WALLET_SHORT}</span>
+                    <span className="num text-[13px] font-medium">
+                      {live && circleSession
+                        ? `${circleSession.address.slice(0, 6)}…${circleSession.address.slice(-4)}`
+                        : DEMO_WALLET_SHORT}
+                    </span>
                   </div>
                   <div className="mt-3 flex items-center justify-between">
                     <span className="text-[12px] text-muted-foreground">Balance</span>
-                    <Amount value={25_420} size="sm" />
+                    <Amount value={live ? 0 : 25_420} size="sm" />
                   </div>
                   <div className="mt-3 flex items-center justify-between">
                     <span className="text-[12px] text-muted-foreground">Network</span>
@@ -275,15 +330,19 @@ function ConnectPage() {
                   </div>
                 </div>
               ) : null}
+              {error ? <p className="mt-4 text-[12px] text-destructive">{error}</p> : null}
             </div>
           ) : null}
 
           {phase === "role" ? (
             <div className="animate-fade-up mt-8 lg:mt-0">
-              <h2 className="text-[24px] font-semibold text-foreground">Choose your demo role</h2>
+              <h2 className="text-[24px] font-semibold text-foreground">
+                Choose your {live ? "market" : "demo"} role
+              </h2>
               <p className="mt-2 text-[13.5px] text-muted-foreground">
-                You can switch at any time from the header. All three roles share one live demo
-                state.
+                {live
+                  ? "Your wallet address determines which onchain actions will succeed. Use separate Circle wallets for business, buyer, and lenders."
+                  : "You can switch at any time from the header. All three roles share one live demo state."}
               </p>
               <div className="mt-8 space-y-2.5">
                 {(

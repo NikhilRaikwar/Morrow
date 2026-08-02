@@ -12,6 +12,7 @@ import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { MorrowProvider } from "../lib/morrow/store";
+import { CircleWalletProvider } from "../lib/circle/wallet-context";
 import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
@@ -147,11 +148,13 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <MorrowProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <Toaster position="bottom-right" richColors closeButton />
-      </MorrowProvider>
+      <CircleWalletProvider>
+        <MorrowProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+          <Toaster position="bottom-right" richColors closeButton />
+        </MorrowProvider>
+      </CircleWalletProvider>
     </QueryClientProvider>
   );
 }
