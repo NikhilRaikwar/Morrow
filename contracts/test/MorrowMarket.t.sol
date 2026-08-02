@@ -58,4 +58,62 @@ contract MorrowMarketTest is Test {
         vm.expectRevert(MorrowMarket.Unauthorized.selector);
         market.acceptReceivable(id);
     }
+
+    function testCancelledUnfilledAuctionLetsEachLenderRecoverEscrowWhilePaused() public {
+        vm.prank(seller);
+        uint256 id = market.createReceivable(buyer, keccak256("underfilled"), 10_000e6, 8_000e6, uint64(block.timestamp + 30 days), 1_000);
+        vm.prank(buyer); market.acceptReceivable(id);
+        vm.prank(seller); market.openAuction(id, uint64(block.timestamp + 1 days));
+        vm.prank(lenderA); market.placeBid(id, 4_000e6, 500);
+
+        vm.warp(block.timestamp + 1 days);
+        market.cancelUnfilledAuction(id);
+        market.setPaused(true);
+
+        vm.prank(lenderA); market.claimBidRefund(id, 0);
+        assertEq(usdc.balanceOf(lenderA), 20_000e6);
+        vm.prank(lenderA);
+        vm.expectRevert(MorrowMarket.NothingToRefund.selector);
+        market.claimBidRefund(id, 0);
+    }
+
+    function testRejectsBidAboveSellerAprCeilingAndUnauthorizedFinalization() public {
+        vm.prank(seller);
+        uint256 id = market.createReceivable(buyer, keccak256("rate"), 1_000e6, 800e6, uint64(block.timestamp + 30 days), 500);
+        vm.prank(buyer); market.acceptReceivable(id);
+        vm.prank(seller); market.openAuction(id, uint64(block.timestamp + 1 days));
+
+        vm.prank(lenderA);
+        vm.expectRevert(MorrowMarket.BidRateTooHigh.selector);
+        market.placeBid(id, 800e6, 501);
+
+        vm.prank(lenderA); market.placeBid(id, 800e6, 500);
+        vm.prank(lenderA);
+        vm.expectRevert(MorrowMarket.Unauthorized.selector);
+        market.finalizeAuction(id);
+    }
+
+    function testFuzz_BidRefundEqualsUnusedEscrow(uint96 firstBidRaw, uint96 secondBidRaw) public {
+        uint256 firstBid = bound(uint256(firstBidRaw), 1e6, 20_000e6);
+        uint256 secondBid = bound(uint256(secondBidRaw), 1e6, 20_000e6);
+        uint256 advance = firstBid < secondBid ? firstBid : secondBid;
+
+        vm.prank(seller);
+        uint256 id = market.createReceivable(buyer, keccak256("fuzz"), advance + 1e6, advance, uint64(block.timestamp + 30 days), 1_000);
+        vm.prank(buyer); market.acceptReceivable(id);
+        vm.prank(seller); market.openAuction(id, uint64(block.timestamp + 1 days));
+        vm.prank(lenderA); market.placeBid(id, firstBid, 700);
+        vm.prank(lenderB); market.placeBid(id, secondBid, 300);
+        vm.prank(seller); market.finalizeAuction(id);
+
+        MorrowMarket.Bid[] memory bids = market.getBids(id, 0, 2);
+        uint256 expectedA = bids[0].amount - bids[0].acceptedAmount;
+        uint256 expectedB = bids[1].amount - bids[1].acceptedAmount;
+        uint256 beforeA = usdc.balanceOf(lenderA);
+        uint256 beforeB = usdc.balanceOf(lenderB);
+        if (expectedA > 0) { vm.prank(lenderA); market.claimBidRefund(id, 0); }
+        if (expectedB > 0) { vm.prank(lenderB); market.claimBidRefund(id, 1); }
+        assertEq(usdc.balanceOf(lenderA) - beforeA, expectedA);
+        assertEq(usdc.balanceOf(lenderB) - beforeB, expectedB);
+    }
 }

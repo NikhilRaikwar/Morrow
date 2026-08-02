@@ -7,7 +7,7 @@ MorrowMarket is deployed on **Arc Testnet only**. It is a hackathon MVP, not a p
 ### Deployed contract
 
 - Network: Arc Testnet (`5042002`)
-- Contract: [`0xAA16db1eE0E26327B5A46B4931F095d936764EA8`](https://testnet.arcscan.app/address/0xAA16db1eE0E26327B5A46B4931F095d936764EA8)
+- Contract: [`0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D`](https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D)
 - Settlement asset: Arc canonical ERC-20 USDC (`0x3600000000000000000000000000000000000000`), 6 decimals
 - Servicing fee: 100 bps
 
@@ -23,6 +23,8 @@ MorrowMarket is deployed on **Arc Testnet only**. It is a hackathon MVP, not a p
 - Contract has no arbitrary token sweep or admin withdrawal path.
 - Circle webhook uses raw-body ECDSA-SHA256 verification via Circle's per-delivery public key.
 - Circle API keys and deployer keys stay server/local only; no secret uses a `VITE_` prefix.
+- Circle transaction requests are server-side allowlisted to known MorrowMarket and canonical-USDC ABI signatures; the browser cannot select an arbitrary contract or calldata target.
+- Circle user tokens and encryption keys are held in browser memory for the active PIN session only and are never written to localStorage.
 
 ## Required checks before any new deployment
 
@@ -36,7 +38,9 @@ MorrowMarket is deployed on **Arc Testnet only**. It is a hackathon MVP, not a p
 
 - Current application screens remain in explicit demo/mock mode until the Circle Wallet challenge flow and Arc adapter replace the local store actions.
 - Test suite has golden-path and authorization coverage; fuzz/invariant tests and an independent review remain required.
+- The current suite includes golden-path, role authorization, auction cancellation/refunds while paused, APR-ceiling, and fuzzed unused-escrow refund coverage. State-machine invariants and an external review remain required before any real-value deployment.
 - In-memory webhook deduplication resets across serverless instances; persistent event storage is needed for production.
+- `@circle-fin/w3s-pw-web-sdk` currently brings transitive dependencies with reported npm audit findings. This is tracked as a release blocker for production; do not use this dependency set for a real-value deployment without an upstream remediated version or a reviewed isolation strategy.
 - Invoice documents and KYC/KYB are intentionally out of scope; no private commercial data belongs onchain.
 
 ## Reporting vulnerabilities
