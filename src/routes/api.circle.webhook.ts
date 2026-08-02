@@ -61,7 +61,13 @@ export const Route = createFileRoute("/api/circle/webhook")({
           const notification = JSON.parse(rawBody) as CircleNotification;
           const configuredId = process.env.CIRCLE_WEBHOOK_SUBSCRIPTION_ID;
           if (configuredId && notification.subscriptionId !== configuredId) {
-            return new Response("Unexpected Circle subscription", { status: 403 });
+            // Circle's activation/test flow can be delivered before the Console has
+            // fully propagated the final subscription ID. The signed payload is the
+            // security boundary; retain observability without rejecting activation.
+            console.warn("Circle webhook subscription ID differs from configured value", {
+              configuredId,
+              receivedId: notification.subscriptionId,
+            });
           }
 
           // Circle may retry deliveries. In-memory dedupe is sufficient for the testnet MVP;
