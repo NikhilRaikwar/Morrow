@@ -35,6 +35,7 @@ import { relativeTime, usdc } from "@/lib/morrow/format";
 import type { Role } from "@/lib/morrow/types";
 import { Pill, Wordmark } from "./primitives";
 import { DemoControls } from "./demo-controls";
+import { EnvironmentBadge } from "./environment-badge";
 import { toast } from "sonner";
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -296,9 +297,7 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="flex items-center justify-center gap-2 border-b border-border bg-foreground px-4 py-1.5 text-center text-[11.5px] font-medium text-background">
-        Demo environment • Arc Testnet • Mock businesses and test USDC
-      </div>
+      <EnvironmentBadge />
 
       <div className="flex">
         <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 border-r border-border bg-sidebar lg:block">
