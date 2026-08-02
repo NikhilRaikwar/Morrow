@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { DemoBadge, TxLink } from "./primitives";
+import { TxLink } from "./primitives";
 
 export interface TxStep {
   label: string;
@@ -25,21 +25,19 @@ export function useTxRunner(steps: TxStep[], stepMs = 750) {
     [],
   );
 
-  const run = (onDone?: () => void) => {
+  const run = async (work?: () => Promise<void> | void) => {
     timers.current.forEach(clearTimeout);
     timers.current = [];
     setPhase("running");
     setCurrent(0);
-    steps.forEach((_, index) => {
-      timers.current.push(setTimeout(() => setCurrent(index), index * stepMs));
-    });
-    timers.current.push(
-      setTimeout(() => {
-        setCurrent(steps.length);
-        setPhase("done");
-        onDone?.();
-      }, steps.length * stepMs),
-    );
+    try {
+      await work?.();
+      setCurrent(steps.length);
+      setPhase("done");
+    } catch {
+      setPhase("idle");
+      throw new Error("The Circle transaction was not completed.");
+    }
   };
 
   const reset = () => {
@@ -160,7 +158,7 @@ export function TransactionDialog({
               </div>
             ) : null}
             <div className="flex items-center justify-between gap-3 pt-1">
-              <DemoBadge />
+              <span className="text-[12px] text-muted-foreground">Confirmed on Arc Testnet</span>
               <Button
                 onClick={() => {
                   onOpenChange(false);
@@ -175,7 +173,9 @@ export function TransactionDialog({
           <div className="space-y-4">
             <TxSteps steps={steps} current={current} phase={phase} />
             <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
-              <DemoBadge />
+              <span className="text-[12px] text-muted-foreground">
+                Awaiting Circle PIN approval
+              </span>
               <span className="inline-flex items-center gap-2 text-[12px] text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Arc Testnet

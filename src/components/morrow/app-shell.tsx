@@ -30,11 +30,9 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useMorrow } from "@/lib/morrow/store";
-import { DEMO_WALLET_SHORT } from "@/lib/morrow/seed";
 import { relativeTime, usdc } from "@/lib/morrow/format";
 import type { Role } from "@/lib/morrow/types";
 import { Pill, Wordmark } from "./primitives";
-import { DemoControls } from "./demo-controls";
 import { EnvironmentBadge } from "./environment-badge";
 import { toast } from "sonner";
 
@@ -121,7 +119,11 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="flex items-center gap-2">
             <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="num text-[12px] font-medium text-foreground">{DEMO_WALLET_SHORT}</span>
+            <span className="num text-[12px] font-medium text-foreground">
+              {state.walletAddress
+                ? `${state.walletAddress.slice(0, 6)}…${state.walletAddress.slice(-4)}`
+                : "Connect Circle Wallet"}
+            </span>
           </div>
           <p className="num mt-1.5 text-[15px] font-semibold text-foreground">
             {usdc(state.balances[state.role])}{" "}
@@ -147,12 +149,11 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 export function RoleSwitcher({ compact }: { compact?: boolean }) {
   const { state, setRole } = useMorrow();
   const navigate = useNavigate();
-  const [controlsOpen, setControlsOpen] = useState(false);
 
   const change = (role: Role) => {
     setRole(role);
     toast.success(`Switched to ${ROLE_LABEL[role]} view`, {
-      description: "All demo data stays in sync across roles.",
+      description: "Permissions are enforced by the connected Arc wallet and MorrowMarket.",
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     navigate({ to: ROLE_HOME[role] as any });
@@ -164,7 +165,7 @@ export function RoleSwitcher({ compact }: { compact?: boolean }) {
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="gap-2">
             <span className="hidden text-[11px] font-normal text-muted-foreground sm:inline">
-              Demo role
+              Market role
             </span>
             <span className="text-[13px] font-medium">{ROLE_LABEL[state.role]}</span>
             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
@@ -172,7 +173,7 @@ export function RoleSwitcher({ compact }: { compact?: boolean }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">
           <DropdownMenuLabel className="text-[11px] tracking-wide text-muted-foreground uppercase">
-            Switch demo role
+            Switch market role
           </DropdownMenuLabel>
           {(["business", "lender", "buyer"] as Role[]).map((role) => (
             <DropdownMenuItem key={role} onSelect={() => change(role)} className="gap-2">
@@ -180,13 +181,8 @@ export function RoleSwitcher({ compact }: { compact?: boolean }) {
               {state.role === role ? <Pill tone="info">Active</Pill> : null}
             </DropdownMenuItem>
           ))}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => setTimeout(() => setControlsOpen(true), 10)}>
-            Demo controls
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      {!compact ? <DemoControls open={controlsOpen} onOpenChange={setControlsOpen} /> : null}
     </>
   );
 }

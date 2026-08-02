@@ -74,7 +74,7 @@ function InvoiceDetail() {
         <div className="mx-auto max-w-md py-20 text-center">
           <h1 className="text-[20px] font-semibold text-foreground">Invoice not found</h1>
           <p className="mt-2 text-[13.5px] text-muted-foreground">
-            This receivable may have been reset with the demo state.
+            This receivable was not found in the current Arc event window.
           </p>
           <Link to="/market" className="mt-6 inline-block">
             <Button>Back to market</Button>

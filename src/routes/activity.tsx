@@ -63,7 +63,10 @@ function ActivityPage() {
       </div>
 
       {events.length === 0 ? (
-        <EmptyState title="No activity" description="Actions you take in the demo appear here." />
+        <EmptyState
+          title="No onchain activity"
+          description="Create or interact with a receivable to see Arc events here."
+        />
       ) : (
         <ol className="relative space-y-1 border-l border-border pl-5">
           {events.map((event) => (
@@ -105,7 +108,7 @@ function ActivityPage() {
       )}
 
       <Disclaimer className="mt-6">
-        Transaction hashes are simulated for this Arc Testnet demo.
+        Activity is decoded from MorrowMarket events on Arc Testnet. Arc RPC remains authoritative.
       </Disclaimer>
     </AppShell>
   );

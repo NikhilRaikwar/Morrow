@@ -16,7 +16,6 @@ import {
 } from "@/components/morrow/primitives";
 import { Button } from "@/components/ui/button";
 import { useMorrow } from "@/lib/morrow/store";
-import { CASH_UNLOCKED_HISTORY } from "@/lib/morrow/seed";
 import { formatDate, fundedPct, outstanding, usdc, usdcCompact } from "@/lib/morrow/format";
 import type { Invoice, InvoiceStatus } from "@/lib/morrow/types";
 
@@ -67,10 +66,7 @@ function BusinessDashboard() {
 
   const financedThisMonth = mine.reduce((sum, i) => sum + i.advanceReleased, 0);
 
-  const chartData = [
-    ...CASH_UNLOCKED_HISTORY,
-    { month: "Aug", volume: Math.round(financedThisMonth) },
-  ];
+  const chartData = [{ month: "Current", volume: Math.round(financedThisMonth) }];
 
   const counts = PIPELINE.map((bucket) => ({
     ...bucket,
@@ -292,11 +288,18 @@ function BusinessDashboard() {
                     <InvoiceAction
                       invoice={invoice}
                       onOpenAuction={() => {
-                        openAuction(invoice.id);
-                        toast.success(`Funding auction opened for ${invoice.ref}`, {
-                          description: "Lenders can now place bids.",
-                        });
-                        navigate({ to: "/auction/$id", params: { id: invoice.id } });
+                        void openAuction(invoice.id)
+                          .then(() => {
+                            toast.success(`Funding auction opened for ${invoice.ref}`, {
+                              description: "Confirmed through Circle and Arc.",
+                            });
+                            navigate({ to: "/auction/$id", params: { id: invoice.id } });
+                          })
+                          .catch((error) =>
+                            toast.error(
+                              error instanceof Error ? error.message : "Unable to open auction.",
+                            ),
+                          );
                       }}
                       onCopy={() => copyLink(invoice)}
                     />

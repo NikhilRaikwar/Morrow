@@ -81,15 +81,15 @@ export function BidDialog({
     setSubmittedBid({ amount: value, apr });
     onOpenChange(false);
     setTxOpen(true);
-    tx.run(() => {
-      const hash = placeBid({
+    void tx.run(async () => {
+      const result = await placeBid({
         invoiceId: invoice.id,
         amount: value,
         apr,
         maxDurationDays: Number(maxDuration),
         source,
       });
-      setTxHash(hash);
+      setTxHash(result.txHash ?? "");
       toast.success(`Bid placed on ${invoice.ref}`, {
         description: `${usdc(value)} USDC at ${apr.toFixed(1)}% APR`,
       });

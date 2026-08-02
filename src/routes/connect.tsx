@@ -10,7 +10,6 @@ import { Wordmark, Pill, Disclaimer, Amount } from "@/components/morrow/primitiv
 import { useMorrow } from "@/lib/morrow/store";
 import { useCircleWallet } from "@/lib/circle/wallet-context";
 import { getMorrowPublicConfig } from "@/config/env";
-import { DEMO_WALLET_SHORT } from "@/lib/morrow/seed";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/morrow/types";
 
@@ -315,7 +314,7 @@ function ConnectPage() {
                     <span className="num text-[13px] font-medium">
                       {live && circleSession
                         ? `${circleSession.address.slice(0, 6)}…${circleSession.address.slice(-4)}`
-                        : DEMO_WALLET_SHORT}
+                        : "—"}
                     </span>
                   </div>
                   <div className="mt-3 flex items-center justify-between">

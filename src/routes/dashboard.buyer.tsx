@@ -125,9 +125,9 @@ function BuyerDashboard() {
     const invoice = target;
     setTarget(null);
     setTxOpen(true);
-    acceptTx.run(() => {
-      const hash = acceptInvoice(invoice.id);
-      setTxHash(hash);
+    void acceptTx.run(async () => {
+      const result = await acceptInvoice(invoice.id);
+      setTxHash(result.txHash ?? "");
       toast.success(`${invoice.ref} accepted`, {
         description: "The supplier can now open a funding auction.",
       });
@@ -141,21 +141,25 @@ function BuyerDashboard() {
     if (amount <= 0) return;
     setTarget(null);
     setTxOpen(true);
-    payTx.run(() => {
-      const result = payInvoice(invoice.id, amount);
-      setTxHash(result.txHash);
-      setSettledFlag(result.settled);
+    void payTx.run(async () => {
+      const result = await payInvoice(invoice.id, amount);
+      setTxHash(result.txHash ?? "");
+      setSettledFlag(amount >= outstanding(invoice));
       toast.success(`${usdc(amount)} USDC paid`, {
-        description: result.settled
-          ? `${invoice.ref} fully settled and distributed.`
-          : `${invoice.ref} partially repaid.`,
+        description:
+          amount >= outstanding(invoice)
+            ? `${invoice.ref} fully settled and distributed.`
+            : `${invoice.ref} partially repaid.`,
       });
     });
   };
 
   const reject = (invoice: Invoice) => {
-    rejectInvoice(invoice.id);
-    toast(`${invoice.ref} disputed`, { description: "The supplier has been notified." });
+    void rejectInvoice(invoice.id)
+      .then(() => toast(`${invoice.ref} disputed`, { description: "Rejection confirmed on Arc." }))
+      .catch((error) =>
+        toast.error(error instanceof Error ? error.message : "Unable to reject receivable."),
+      );
   };
 
   return (

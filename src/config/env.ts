@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { ARC_TESTNET_CHAIN_ID, ARC_TESTNET_RPC_URL } from "./arc";
 
-const modeSchema = z.enum(["mock", "arc"]).default("mock");
+const modeSchema = z.literal("arc").default("arc");
 
 const publicEnvironmentSchema = z.object({
   VITE_MORROW_MODE: modeSchema,
@@ -13,7 +13,7 @@ const publicEnvironmentSchema = z.object({
 });
 
 export type MorrowPublicConfig = {
-  mode: "mock" | "arc";
+  mode: "arc";
   arcRpcUrl: string;
   arcChainId: number;
   marketAddress?: `0x${string}`;
@@ -32,14 +32,6 @@ export function getMorrowPublicConfig(
     throw new Error(
       `Morrow real mode supports Arc Testnet only (expected chain ${ARC_TESTNET_CHAIN_ID}, received ${parsed.VITE_ARC_CHAIN_ID}).`,
     );
-  }
-
-  if (parsed.VITE_MORROW_MODE === "mock") {
-    return {
-      mode: "mock",
-      arcRpcUrl: parsed.VITE_ARC_RPC_URL,
-      arcChainId: parsed.VITE_ARC_CHAIN_ID,
-    };
   }
 
   if (!parsed.VITE_MORROW_MARKET_ADDRESS || !isAddress(parsed.VITE_MORROW_MARKET_ADDRESS)) {

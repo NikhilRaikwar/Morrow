@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, Gavel, Sparkles, Timer, Users } from "lucide-react";
+import { ArrowLeft, Gavel, Timer, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -63,7 +63,7 @@ const FINALIZE_STEPS = [
 
 function AuctionRoom() {
   const { id } = Route.useParams();
-  const { state, seedCompetingBid, finalizeAuction, advanceAuctionTimer } = useMorrow();
+  const { state, finalizeAuction } = useMorrow();
   const invoice = state.invoices.find((i) => i.id === id || i.ref === id);
 
   const [bidOpen, setBidOpen] = useState(false);
@@ -113,10 +113,10 @@ function AuctionRoom() {
 
   const finalize = () => {
     setTxOpen(true);
-    tx.run(() => {
-      const result = finalizeAuction(invoice.id);
-      setTxHash(result.txHash);
-      setReleased(result.released);
+    void tx.run(async () => {
+      const result = await finalizeAuction(invoice.id);
+      setTxHash(result.txHash ?? "");
+      setReleased(invoice.advanceRequested);
       toast.success("Auction finalized", {
         description: `${usdc(result.released)} USDC released to ${invoice.sellerName}.`,
       });
@@ -149,19 +149,6 @@ function AuctionRoom() {
         description={`${invoice.sellerName} → ${invoice.buyerName} · ${termDays(invoice)}-day term · ceiling ${invoice.maxCostApr}% APR`}
         actions={
           <>
-            {live ? (
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={() => {
-                  seedCompetingBid(invoice.id);
-                  toast("New competing bid", { description: "A lender undercut the book." });
-                }}
-              >
-                <Sparkles className="h-4 w-4" />
-                Simulate competing bid
-              </Button>
-            ) : null}
             {live ? (
               <Button className="gap-2" onClick={() => setBidOpen(true)} disabled={remaining <= 0}>
                 <Gavel className="h-4 w-4" />
@@ -298,16 +285,6 @@ function AuctionRoom() {
               <div className="mt-5 space-y-2">
                 <Button className="w-full" onClick={finalize} disabled={invoice.bids.length === 0}>
                   Finalize auction
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    advanceAuctionTimer(invoice.id);
-                    toast("Auction clock advanced", { description: "Jumped forward 1 hour." });
-                  }}
-                >
-                  Fast-forward clock
                 </Button>
                 <p className="text-center text-[11.5px] text-muted-foreground">
                   Sellers can close early once the advance is covered.

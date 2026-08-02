@@ -67,6 +67,7 @@ function CreateInvoicePage() {
 
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
+  const [buyerAddress, setBuyerAddress] = useState("");
   const [reference, setReference] = useState("");
   const [description, setDescription] = useState("");
   const [industry, setIndustry] = useState("Design & creative services");
@@ -89,32 +90,29 @@ function CreateInvoicePage() {
   const tx = useTxRunner(TX_STEPS);
 
   const step1Valid =
-    buyerName.trim().length > 1 &&
-    buyerEmail.includes("@") &&
+    /^0x[a-fA-F0-9]{40}$/.test(buyerAddress) &&
     description.trim().length > 2 &&
     face > 0 &&
     days > 0;
 
   const submit = () => {
     setOpen(true);
-    tx.run(() => {
-      const result = createInvoice({
-        buyerName: buyerName.trim(),
-        buyerEmail: buyerEmail.trim(),
+    void tx.run(async () => {
+      const result = await createInvoice({
+        buyerAddress,
         reference: reference.trim(),
         description: description.trim(),
-        industry,
         faceValue: face,
-        issueDate,
         dueDate,
-        poRef: poRef.trim() || "PO-PENDING",
         advanceRequested: advance,
         maxCostApr,
         auctionDurationHours: Number(auctionHours),
-        retentionPct: 100 - advancePct,
       });
-      setCreated(result.invoice);
-      setTxHash(result.txHash);
+      setTxHash(result.txHash ?? "");
+      toast.success("Receivable submitted", {
+        description: "Circle approval completed; Arc state will refresh shortly.",
+      });
+      navigate({ to: "/market" });
     });
   };
 
@@ -214,6 +212,14 @@ function CreateInvoicePage() {
                       value={buyerEmail}
                       onChange={(e) => setBuyerEmail(e.target.value)}
                       placeholder="ap@northwind.com"
+                    />
+                  </Field>
+                  <Field label="Buyer Arc wallet address" htmlFor="buyerAddress">
+                    <Input
+                      id="buyerAddress"
+                      value={buyerAddress}
+                      onChange={(e) => setBuyerAddress(e.target.value)}
+                      placeholder="0x…"
                     />
                   </Field>
                   <Field label="Invoice reference" htmlFor="reference" hint="Optional">

@@ -29,6 +29,7 @@ type StartResponse = Omit<WalletSession, "walletId" | "address" | "balances"> & 
   address?: string;
   challengeId?: string;
 };
+type ChallengeExecutionResult = { data?: { transactionHash?: string; txHash?: string } };
 
 type CircleWalletContextValue = {
   session: WalletSession | null;
@@ -36,7 +37,7 @@ type CircleWalletContextValue = {
   error: string | null;
   connect: (userId: string) => Promise<WalletSession>;
   refresh: () => Promise<WalletSession | null>;
-  execute: (action: MorrowCircleAction) => Promise<void>;
+  execute: (action: MorrowCircleAction) => Promise<{ txHash?: string }>;
   disconnect: () => void;
 };
 
@@ -62,13 +63,13 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
   const executeChallenge = useCallback(async (challengeId: string) => {
     const instance = sdk.current;
     if (!instance) throw new Error("Circle approval SDK is not ready.");
-    await new Promise<void>((resolve, reject) => {
+    return new Promise<unknown>((resolve, reject) => {
       instance.execute(challengeId, (challengeError, result) => {
         if (challengeError) return reject(challengeError);
         if (result?.status === "FAILED" || result?.status === "EXPIRED") {
           return reject(new Error("Circle challenge was not completed."));
         }
-        resolve();
+        resolve(result);
       });
     });
   }, []);
@@ -135,10 +136,11 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
           action,
         });
         setOperationState("awaiting_approval");
-        await executeChallenge(challenge.challengeId);
+        const result = (await executeChallenge(challenge.challengeId)) as ChallengeExecutionResult;
         setOperationState("submitted");
         await refresh();
         setOperationState("confirmed");
+        return { txHash: result?.data?.transactionHash ?? result?.data?.txHash };
       } catch (cause) {
         const message =
           cause instanceof Error ? cause.message : "Circle transaction was not completed.";

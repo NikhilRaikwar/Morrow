@@ -24,7 +24,6 @@ import {
 } from "@/components/morrow/primitives";
 import { Button } from "@/components/ui/button";
 import { useMorrow } from "@/lib/morrow/store";
-import { PORTFOLIO_VALUE_HISTORY } from "@/lib/morrow/seed";
 import {
   bestApr,
   countdown,
@@ -93,8 +92,7 @@ function LenderDashboard() {
   );
 
   const chartData = [
-    ...PORTFOLIO_VALUE_HISTORY,
-    { month: "Now", value: Math.round(state.balances.lender + deployed + expected) },
+    { month: "Current", value: Math.round(state.balances.lender + deployed + expected) },
   ];
 
   return (

@@ -4,20 +4,6 @@ export const PROTOCOL_FEE_BPS = 50; // 0.5% of face value
 export const ARCSCAN_BASE = "https://testnet.arcscan.app/tx/";
 export const USER_LENDER_NAME = "Your capital";
 
-const HEX = "0123456789abcdef";
-
-export function mockTxHash(): string {
-  let out = "0x";
-  for (let i = 0; i < 64; i++) out += HEX[Math.floor(Math.random() * 16)];
-  return out;
-}
-
-export function mockDocHash(): string {
-  let out = "0x";
-  for (let i = 0; i < 40; i++) out += HEX[Math.floor(Math.random() * 16)];
-  return out;
-}
-
 export function shortHash(hash: string, lead = 10, tail = 8): string {
   if (hash.length <= lead + tail + 3) return hash;
   return `${hash.slice(0, lead)}…${hash.slice(-tail)}`;
