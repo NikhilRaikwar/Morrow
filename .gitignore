@@ -19,6 +19,10 @@ dist-ssr
 .env.*
 !.env.example
 
+# Solidity compiler artifacts
+contracts/out/
+contracts/cache/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
