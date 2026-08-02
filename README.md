@@ -1,134 +1,122 @@
-# Morrow
+<p align="center">
+  <img src="./public/morrow-banner.svg" alt="Morrow — Stablecoin-native receivables credit" width="100%" />
+</p>
 
-**Sell tomorrow's receivable for today's USDC.**
+<h1 align="center">Morrow</h1>
 
-Morrow is a stablecoin-native receivables credit market for Arc Testnet. A business registers a buyer-accepted receivable, lenders compete to escrow USDC at the lowest APR, and the buyer's repayment is distributed by an onchain settlement waterfall.
+<p align="center"><strong>Buyer-accepted invoices become programmable USDC credit on Arc.</strong></p>
 
-> Testnet only. Morrow is unaudited hackathon software, not a production credit product or investment offering.
+<p align="center">
+  <a href="https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D"><img src="https://img.shields.io/badge/Arc-Testnet-2563EB?style=flat-square" alt="Arc Testnet" /></a>
+  <a href="https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D"><img src="https://img.shields.io/badge/Contract-Verified-16A34A?style=flat-square" alt="Verified contract" /></a>
+  <img src="https://img.shields.io/badge/Settlement-USDC-2775CA?style=flat-square" alt="USDC settlement" />
+  <img src="https://img.shields.io/badge/Wallets-Circle%20PIN-7C3AED?style=flat-square" alt="Circle PIN wallets" />
+  <img src="https://img.shields.io/badge/License-MIT-111827?style=flat-square" alt="MIT license" />
+</p>
 
-## What is real today
+> **Testnet prototype.** Morrow is unaudited hackathon software, not an investment product, credit offer, or production underwriting system.
 
-- Arc Testnet v1 contract: [`0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D`](https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D), [verified deployment transaction](https://testnet.arcscan.app/tx/0xac94f5841769b13a59c1ad974b95bf3e5536cc3b73906bbd0688ff0ce282ac2e)
-- Canonical Arc ERC-20 USDC: `0x3600000000000000000000000000000000000000` with 6-decimal application accounting.
-- Foundry-tested onchain lifecycle: buyer acceptance, escrowed bids, lowest-APR allocation, partial bid refunds, buyer repayment, lender claims, fee payment, and seller remainder.
-- Circle User-Controlled Wallet server routes and PIN challenge UI for Arc Testnet EOA onboarding and allowlisted contract execution.
-- Signed Circle webhook endpoint at `/api/circle/webhook`.
+## The product
 
-## Modes
+Businesses should not have to wait 30–90 days for money that a buyer has already agreed to pay. Morrow turns that accepted payment obligation into a transparent, stablecoin-native credit market:
 
-`VITE_MORROW_MODE=mock` is the replayable pitch walkthrough. It never submits a transaction and its browser-local data must not be treated as onchain state.
+- A business records the receivable and its commercial terms.
+- The buyer accepts the obligation onchain without changing their due date.
+- Lenders compete on APR and escrow USDC in the auction.
+- The best eligible bids fund the advance.
+- When the buyer pays, the Morrow contract executes one deterministic USDC waterfall: protocol fee, lender claims, then the business remainder.
 
-`VITE_MORROW_MODE=arc` enables Circle wallet onboarding, validated market-address checks, and the server-side Circle challenge boundary. The live dashboard event adapter remains the next implementation slice; do not present browser mock invoices as live receivables.
+No volatile collateral, manual lender reconciliation, or opaque payment routing.
 
-## Architecture
+## Why Arc + USDC
+
+Morrow treats USDC as the unit of account from the first bid to final settlement. Arc gives that workflow USDC-denominated gas and rapid finality; USDC makes advances, escrow, repayment, and accounting legible in the same currency. Circle user-controlled wallets add PIN-approved actions without asking a business, buyer, or lender to manage a seed phrase.
+
+## How Morrow works
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables': {'primaryColor':'#dbeafe','primaryTextColor':'#111827','primaryBorderColor':'#2563eb','lineColor':'#64748b','secondaryColor':'#dcfce7','tertiaryColor':'#fef3c7'}}}%%
 flowchart LR
-  U["Business / Buyer / Lender"] --> UI["Morrow UI"]
-  UI --> PIN["Circle PIN Web SDK"]
-  UI --> API["TanStack server routes"]
-  API --> CW["Circle User-Controlled Wallets"]
-  PIN --> CW
-  CW --> ARC["Arc Testnet"]
-  ARC --> USDC["Canonical ERC-20 USDC"]
-  ARC --> MARKET["MorrowMarket escrow + waterfall"]
-  CW --> WH["Signed Circle webhook"]
-  WH --> API
-  UB["Gateway / Unified Balance\noptional lender funding"] -. after core lifecycle .-> ARC
+  B["🏢 Business<br/>Creates receivable"] --> R["MorrowMarket<br/>Commercial terms + document digest"]
+  R --> Y["✓ Buyer<br/>Accepts payment obligation"]
+  Y --> A["⚖ Funding auction<br/>Lenders compete on APR"]
+  L["💵 Lenders<br/>Escrow Arc USDC"] --> A
+  A --> F["Advance released<br/>to business"]
+  P["Buyer repays<br/>in USDC"] --> W["◈ Settlement waterfall"]
+  W --> Fee["Protocol fee"]
+  W --> Claims["Lender principal + yield"]
+  W --> Seller["Business remainder"]
 ```
+
+### Lifecycle rules enforced onchain
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables': {'primaryColor':'#e0e7ff','primaryTextColor':'#111827','primaryBorderColor':'#4f46e5','lineColor':'#64748b','secondaryColor':'#dcfce7','tertiaryColor':'#fee2e2'}}}%%
 stateDiagram-v2
-  [*] --> AwaitingBuyer: createReceivable
-  AwaitingBuyer --> BuyerAccepted: acceptReceivable
-  AwaitingBuyer --> BuyerRejected: rejectReceivable
-  AwaitingBuyer --> Cancelled: cancelReceivable
-  BuyerAccepted --> AuctionLive: openAuction
-  AuctionLive --> Funded: finalizeAuction
-  AuctionLive --> Cancelled: cancelUnfilledAuction
-  Funded --> Funded: repay(partial)
-  Funded --> Settled: repay(full lender due)
-  Funded --> Settled: claim unused bid refund
-  Cancelled --> [*]
-  BuyerRejected --> [*]
-  Settled --> [*]
+  [*] --> AwaitingBuyer: Business creates receivable
+  AwaitingBuyer --> BuyerAccepted: Buyer accepts
+  AwaitingBuyer --> Rejected: Buyer rejects / business cancels
+  BuyerAccepted --> AuctionLive: Business opens auction
+  AuctionLive --> Funded: Lowest-APR allocation finalizes
+  AuctionLive --> Rejected: Unfilled auction cancelled
+  Funded --> PartiallyRepaid: Buyer repays
+  PartiallyRepaid --> Settled: Remaining payment clears
+  Funded --> Settled: Full payment clears
 ```
 
-## Local setup
+## What is live on Arc Testnet
 
-Requires Node 22+, npm, and Foundry.
+| Item | Status |
+| --- | --- |
+| MorrowMarket v1 | [Verified on Arcscan](https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D) |
+| Deployment | [View transaction](https://testnet.arcscan.app/tx/0xac94f5841769b13a59c1ad974b95bf3e5536cc3b73906bbd0688ff0ce282ac2e) |
+| USDC asset | Canonical Arc ERC-20 USDC `0x3600000000000000000000000000000000000000` (6 decimals) |
+| Market actions | Create, accept/reject, open/finalize/cancel auction, approve + bid, refund, and repay |
+| Dashboard data | Arc RPC reads plus decoded MorrowMarket events — no seeded invoice data |
+| Wallet approval | Circle User-Controlled Wallet PIN challenges, with server-side action allowlisting |
+| Notifications | Signed Circle webhook endpoint; Arc receipt/event state remains authoritative |
+
+## Use it end to end
+
+1. Open **Connect** and create/access an Arc Testnet Circle wallet. Complete the Circle PIN approval.
+2. As the business, create a receivable with the buyer’s Arc wallet address, due date, face value, advance request, and APR ceiling.
+3. In a separate Circle user/browser profile, the buyer accepts the receivable.
+4. The business opens the auction. Lenders approve canonical Arc USDC, then place bids in separate profiles.
+5. The business finalizes a fully funded auction. Morrow deterministically selects up to 32 bids by APR, then timestamp and bid index.
+6. The buyer approves USDC and repays. The onchain contract distributes the payment waterfall and the dashboard refreshes directly from Arc events.
+
+Every value-moving action is created by the server from a fixed contract/ABI allowlist, approved by the user through Circle PIN, then confirmed through Arc state. The browser never receives a private key, Circle API key, entity secret, or arbitrary calldata capability.
+
+## Operating Morrow locally
+
+Node 22+, npm, and Foundry are required.
 
 ```sh
 npm install
 npm run dev
-npm run build
-npm run lint
 ```
-
-Contract checks:
 
 ```powershell
 cd contracts
 .\tools\foundry\forge.exe test -vv
 ```
 
-## Environment
-
-Copy `.env.example` to `.env`. Never commit it and never use a `VITE_` prefix for Circle secrets.
+Set these **public** Arc variables in `.env` and Vercel:
 
 ```dotenv
-VITE_MORROW_MODE=mock
+VITE_MORROW_MODE=arc
 VITE_ARC_RPC_URL=https://rpc.testnet.arc.io
 VITE_ARC_CHAIN_ID=5042002
-VITE_MORROW_MARKET_ADDRESS=
-CIRCLE_API_KEY=
-CIRCLE_APP_ID=
-CIRCLE_WEBHOOK_SUBSCRIPTION_ID=
-PROTOCOL_FEE_RECIPIENT=
-DEPLOYER_PRIVATE_KEY=
+VITE_MORROW_MARKET_ADDRESS=0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D
 ```
 
-For Circle User-Controlled Wallets, `CIRCLE_ENTITY_SECRET` is not required. It is for developer-controlled custody and must remain unset for Morrow's selected wallet model.
+Circle server credentials belong only in server environment variables. Never use `VITE_` for a Circle API key, user token, encryption key, entity secret, or deployer private key.
 
-## Contract lifecycle
+## Trust boundaries
 
-1. Business calls `createReceivable` with an offchain-document digest.
-2. Buyer calls `acceptReceivable`.
-3. Business calls `openAuction`.
-4. Lenders approve Arc ERC-20 USDC then call `placeBid`.
-5. Business calls `finalizeAuction`; up to 32 bids are selected by APR, timestamp, then bid index.
-6. Lenders pull unused escrow with `claimBidRefund`.
-7. Buyer approves USDC and calls `repay`; the contract pays the servicing fee, lender claims, and seller remainder.
+- Invoice documents and commercial evidence remain offchain; Morrow stores a document digest and terms.
+- MorrowMarket is the settlement source of truth. Webhooks speed up refreshes only.
+- Test USDC only. No KYC/KYB, credit scoring, invoice verification, collections, or production compliance is provided.
 
-All USDC amounts in the contract are integer base units with six decimals. Arc gas is USDC too, but native gas accounting must never be mixed with the ERC-20 application amounts.
+Read [SECURITY.md](./SECURITY.md) for the threat model and [LICENSE](./LICENSE) for the MIT license.
 
-## Circle integration
-
-The browser receives short-lived user credentials only in memory. It uses Circle's PIN Web SDK to execute a server-created challenge. The server:
-
-- creates or accesses an Arc Testnet EOA wallet;
-- validates every requested Morrow action against a fixed ABI allowlist;
-- fixes the target to the configured Morrow market or canonical USDC contract;
-- estimates fees and creates a Circle contract-execution challenge;
-- never logs or returns Circle API keys or deployer credentials.
-
-The webhook verifies Circle's raw-body ECDSA signature. It is a refresh signal, not settlement truth: Arc transaction receipts and contract events are authoritative.
-
-## Three-wallet testnet demo
-
-Use three separate browser profiles / Circle user IDs:
-
-1. Business creates a receivable.
-2. Buyer accepts it.
-3. Two lenders approve USDC and bid at different APRs.
-4. Business finalizes the auction.
-5. Buyer repays the invoice.
-6. Inspect Arcscan events, lender balances, fee recipient balance, and seller proceeds.
-
-## Security and limitations
-
-See [SECURITY.md](./SECURITY.md). Invoice verification, KYC/KYB, collections, underwriting, persistent event indexing, and real-value deployment are intentionally out of scope.
-
-## License
-
-MIT © 2026 Nikhil Raikwar. See [LICENSE](./LICENSE).
