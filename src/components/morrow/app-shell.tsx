@@ -27,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ARCSCAN_TESTNET_URL } from "@/config/arc";
+import { useCircleWallet } from "@/lib/circle/wallet-context";
 import { useMorrow } from "@/lib/morrow/store";
 import type { Workspace } from "@/lib/morrow/types";
 import { usdc } from "@/lib/morrow/format";
@@ -250,15 +251,22 @@ export function AppShell({
   requireConnection?: boolean;
 }) {
   const { state, hydrated } = useMorrow();
+  const circleWallet = useCircleWallet();
   const pathname = useRouterState({ select: (router) => router.location.pathname });
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => {
-    if (hydrated && requireConnection && !state.connected && typeof window !== "undefined") {
+    if (
+      hydrated &&
+      requireConnection &&
+      circleWallet.sessionStatus !== "loading" &&
+      !circleWallet.session &&
+      typeof window !== "undefined"
+    ) {
       window.location.replace(`/connect?next=${encodeURIComponent(pathname)}`);
     }
-  }, [hydrated, requireConnection, state.connected, pathname]);
-  if (requireConnection && (!hydrated || !state.connected))
+  }, [circleWallet.session, circleWallet.sessionStatus, hydrated, requireConnection, pathname]);
+  if (requireConnection && (!hydrated || !circleWallet.session))
     return (
       <div className="grid min-h-screen place-items-center bg-white">
         <p className="text-[13px] text-muted-foreground">Restoring Circle wallet session…</p>

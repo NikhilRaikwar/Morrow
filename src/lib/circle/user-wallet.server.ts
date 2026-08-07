@@ -1,4 +1,7 @@
-import { initiateUserControlledWalletsClient } from "@circle-fin/user-controlled-wallets";
+import {
+  Error155106,
+  initiateUserControlledWalletsClient,
+} from "@circle-fin/user-controlled-wallets";
 import { getAddress, isAddress, keccak256, stringToHex } from "viem";
 import { z } from "zod";
 
@@ -84,23 +87,29 @@ export async function createSocialDeviceToken(deviceId: string) {
 
 export async function initializeSocialWallet(userToken: string) {
   const sdk = client();
-  const wallets = await sdk.listWallets({ userToken, blockchain: "ARC-TESTNET" });
-  const existing = (wallets.data?.wallets ?? [])[0] as
-    { id?: string; address?: string; blockchain?: string } | undefined;
-  if (existing?.id && existing.address && isAddress(existing.address)) {
-    return { wallet: await getCircleWallet(userToken) };
+  try {
+    // Circle's social-login flow requires /user/initialize before wallet reads are
+    // available for a new user. Reading wallets first returns "user not initialized".
+    const initialized = await sdk.createWallet({
+      userToken,
+      blockchains: ["ARC-TESTNET"],
+      accountType: "EOA",
+      idempotencyKey: uuid(),
+    });
+    if (!initialized.data?.challengeId) {
+      throw new Error("Circle did not return a social wallet initialization challenge.");
+    }
+    return { challengeId: initialized.data.challengeId };
+  } catch (error) {
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? Number((error as { code?: unknown }).code)
+        : undefined;
+    if (!(error instanceof Error155106) && code !== Error155106.code) throw error;
   }
 
-  const initialized = await sdk.createWallet({
-    userToken,
-    blockchains: ["ARC-TESTNET"],
-    accountType: "EOA",
-    idempotencyKey: uuid(),
-  });
-  if (!initialized.data?.challengeId) {
-    throw new Error("Circle did not return a social wallet initialization challenge.");
-  }
-  return { challengeId: initialized.data.challengeId };
+  // Returning social users are already initialized; reuse their Arc wallet.
+  return { wallet: await getCircleWallet(userToken) };
 }
 
 export async function getCircleWallet(userToken: string) {

@@ -144,7 +144,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
         sessionStorage.removeItem(DEVICE_SESSION_KEY);
         const destination = safeNext(sessionStorage.getItem(NEXT_ROUTE_KEY));
         sessionStorage.removeItem(NEXT_ROUTE_KEY);
-        void navigate({ to: destination as "/dashboard/business", replace: true });
+        await navigate({ to: destination as "/dashboard/business", replace: true });
       } catch (cause) {
         const message = errorMessage(cause, "Unable to finish Google sign-in.");
         setError(message);
