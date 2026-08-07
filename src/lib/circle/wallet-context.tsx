@@ -1,5 +1,8 @@
 import type { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
-import type { SocialLoginResult } from "@circle-fin/w3s-pw-web-sdk/dist/src/types";
+import {
+  SocialLoginProvider,
+  type SocialLoginResult,
+} from "@circle-fin/w3s-pw-web-sdk/dist/src/types";
 import { useNavigate } from "@tanstack/react-router";
 import { Buffer } from "vite-plugin-node-polyfills/shims/buffer";
 import {
@@ -48,6 +51,7 @@ type Context = {
 };
 
 const DEVICE_SESSION_KEY = "morrow_circle_social_device";
+const DEVICE_ID_KEY = "morrow_circle_device_id";
 const NEXT_ROUTE_KEY = "morrow_circle_next_route";
 const CircleWalletContext = createContext<Context | null>(null);
 
@@ -65,6 +69,16 @@ async function request<T>(path: string, method: "GET" | "POST", body?: unknown):
 
 function safeNext(value: string | null) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : "/dashboard/business";
+}
+
+function errorMessage(cause: unknown, fallback: string) {
+  if (cause instanceof Error && cause.message.trim()) return cause.message;
+  if (typeof cause === "string" && cause.trim()) return cause;
+  if (cause && typeof cause === "object" && "message" in cause) {
+    const message = (cause as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return fallback;
 }
 
 export function CircleWalletProvider({ children }: { children: ReactNode }) {
@@ -132,7 +146,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
         sessionStorage.removeItem(NEXT_ROUTE_KEY);
         void navigate({ to: destination as "/dashboard/business", replace: true });
       } catch (cause) {
-        const message = cause instanceof Error ? cause.message : "Unable to finish Google sign-in.";
+        const message = errorMessage(cause, "Unable to finish Google sign-in.");
         setError(message);
         setSessionStatus("error");
         setOperationState("failed");
@@ -151,18 +165,15 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
       const instance = new W3SSdk(
         {
           appSettings: { appId: publicConfig.appId },
-          ...(device
-            ? {
-                loginConfigs: {
-                  ...device,
-                  google: {
-                    clientId: publicConfig.googleClientId,
-                    redirectUri: window.location.origin,
-                    selectAccountPrompt: true,
-                  },
-                },
-              }
-            : {}),
+          loginConfigs: {
+            deviceToken: device?.deviceToken ?? "",
+            deviceEncryptionKey: device?.deviceEncryptionKey ?? "",
+            google: {
+              clientId: publicConfig.googleClientId,
+              redirectUri: window.location.origin,
+              selectAccountPrompt: true,
+            },
+          },
         },
         (loginError, result) => {
           if (loginError) {
@@ -197,7 +208,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setSessionStatus("disconnected");
       } catch (cause) {
         if (cancelled) return;
-        setError(cause instanceof Error ? cause.message : "Unable to initialize Circle login.");
+        setError(errorMessage(cause, "Unable to initialize Circle login."));
         setSessionStatus("error");
       }
     })();
@@ -212,7 +223,11 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
     setSessionStatus("onboarding");
     setOperationState("preparing");
     try {
-      const deviceId = await sdk.current.getDeviceId();
+      let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+      if (!deviceId) {
+        deviceId = await sdk.current.getDeviceId();
+        localStorage.setItem(DEVICE_ID_KEY, deviceId);
+      }
       const device = await request<{ deviceToken: string; deviceEncryptionKey: string }>(
         "/api/circle/social/device-token",
         "POST",
@@ -231,9 +246,9 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
           },
         },
       });
-      await sdk.current.performLogin("Google" as never);
+      await sdk.current.performLogin(SocialLoginProvider.GOOGLE);
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "Unable to start Google login.";
+      const message = errorMessage(cause, "Unable to start Google login.");
       setError(message);
       setSessionStatus("error");
       setOperationState("failed");
@@ -271,8 +286,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
           txHash: result.data?.transactionHash ?? result.data?.txHash,
         };
       } catch (cause) {
-        const message =
-          cause instanceof Error ? cause.message : "Circle transaction was not completed.";
+        const message = errorMessage(cause, "Circle transaction was not completed.");
         setError(message);
         setOperationState(message.toLowerCase().includes("cancel") ? "cancelled" : "failed");
         throw cause;
