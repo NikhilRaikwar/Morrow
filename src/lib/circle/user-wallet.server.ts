@@ -89,6 +89,20 @@ export async function createSocialDeviceToken(deviceId: string) {
 export async function initializeSocialWallet(userToken: string) {
   const sdk = client();
   try {
+    const existing = await findCircleWallet(userToken);
+    if (existing) return { wallet: existing };
+  } catch (error) {
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? Number((error as { code?: unknown }).code)
+        : undefined;
+    // A brand-new PIN-authorized user cannot list wallets until the setup
+    // challenge has completed. All other lookup failures must stop here so a
+    // transient API error can never create an accidental duplicate wallet.
+    if (!(error instanceof Error155110) && code !== Error155110.code) throw error;
+  }
+
+  try {
     // Circle's social-login flow requires /user/initialize before wallet reads are
     // available for a new user. Reading wallets first returns "user not initialized".
     const initialized = await sdk.createWallet({
@@ -129,12 +143,22 @@ export async function initializeSocialWallet(userToken: string) {
 }
 
 export async function getCircleWallet(userToken: string) {
+  const wallet = await findCircleWallet(userToken);
+  if (!wallet) throw new Error("No Arc Testnet wallet exists for this Circle user.");
+  return wallet;
+}
+
+async function findCircleWallet(userToken: string) {
   const sdk = client();
-  const wallets = await sdk.listWallets({ userToken, blockchain: "ARC-TESTNET" });
-  const wallet = (wallets.data?.wallets ?? [])[0] as
-    { id?: string; address?: string; blockchain?: string } | undefined;
-  if (!wallet?.id || !wallet.address || !isAddress(wallet.address))
-    throw new Error("No Arc Testnet wallet exists for this Circle user.");
+  const wallets = await sdk.listWallets({
+    userToken,
+    blockchain: "ARC-TESTNET",
+    pageSize: 50,
+  });
+  const wallet = (wallets.data?.wallets ?? [])
+    .filter((candidate) => candidate.id && candidate.address && isAddress(candidate.address))
+    .sort((left, right) => left.createDate.localeCompare(right.createDate))[0];
+  if (!wallet) return null;
 
   const balances = await sdk.getWalletTokenBalance({
     userToken,
