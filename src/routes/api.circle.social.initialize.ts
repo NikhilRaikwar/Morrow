@@ -24,10 +24,7 @@ export const Route = createFileRoute("/api/circle/social/initialize")({
           });
           return Response.json(
             {
-              error:
-                code === 155110
-                  ? "Circle PIN setup is required before creating the Arc wallet. Please try again."
-                  : "Unable to initialize the Arc wallet.",
+              error: "Unable to initialize the Arc wallet.",
             },
             { status: 400 },
           );

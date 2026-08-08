@@ -87,7 +87,6 @@ export async function createSocialDeviceToken(deviceId: string) {
 }
 
 export async function initializeSocialWallet(userToken: string) {
-  const sdk = client();
   try {
     const existing = await findCircleWallet(userToken);
     if (existing) return { wallet: existing };
@@ -96,49 +95,48 @@ export async function initializeSocialWallet(userToken: string) {
       error && typeof error === "object" && "code" in error
         ? Number((error as { code?: unknown }).code)
         : undefined;
-    // A brand-new PIN-authorized user cannot list wallets until the setup
-    // challenge has completed. All other lookup failures must stop here so a
-    // transient API error can never create an accidental duplicate wallet.
+    // A new social user is not initialized yet, so wallet reads return 155110.
+    // All other lookup failures must stop here so a transient API error can
+    // never create an accidental duplicate wallet.
     if (!(error instanceof Error155110) && code !== Error155110.code) throw error;
   }
 
-  try {
-    // Circle's social-login flow requires /user/initialize before wallet reads are
-    // available for a new user. Reading wallets first returns "user not initialized".
-    const initialized = await sdk.createWallet({
-      userToken,
-      blockchains: ["ARC-TESTNET"],
-      accountType: "EOA",
+  const config = getCircleServerConfig();
+  if (!config.configured) throw new Error("Circle Wallets are not configured on this deployment.");
+  const response = await fetch("https://api.circle.com/v1/w3s/user/initialize", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${config.apiKey}`,
+      "content-type": "application/json",
+      "x-user-token": userToken,
+      "x-request-id": uuid(),
+    },
+    body: JSON.stringify({
       idempotencyKey: uuid(),
-    });
-    if (!initialized.data?.challengeId) {
-      throw new Error("Circle did not return a social wallet initialization challenge.");
-    }
-    return { challengeId: initialized.data.challengeId };
-  } catch (error) {
-    const code =
-      error && typeof error === "object" && "code" in error
-        ? Number((error as { code?: unknown }).code)
-        : undefined;
-    if (error instanceof Error155110 || code === Error155110.code) {
-      // Google has already authenticated this user. Some Circle entities use
-      // PIN authorization for sensitive wallet actions; in that configuration
-      // wallet initialization must also set the user's PIN.
-      const initialized = await sdk.createUserPinWithWallets({
-        userToken,
-        blockchains: ["ARC-TESTNET"],
-        accountType: "EOA",
-        idempotencyKey: uuid(),
-      });
-      if (!initialized.data?.challengeId) {
-        throw new Error("Circle did not return a PIN and Arc wallet setup challenge.");
-      }
-      return { challengeId: initialized.data.challengeId };
-    }
-    if (!(error instanceof Error155106) && code !== Error155106.code) throw error;
+      accountType: "EOA",
+      blockchains: ["ARC-TESTNET"],
+    }),
+  });
+  const payload = (await response.json()) as {
+    data?: { challengeId?: string };
+    code?: number;
+    message?: string;
+  };
+  if (response.ok && payload.data?.challengeId) {
+    return { challengeId: payload.data.challengeId };
+  }
+  if (payload.code !== Error155106.code) {
+    const error = new Error(
+      payload.message ?? "Circle social wallet initialization failed.",
+    ) as Error & {
+      code?: number;
+    };
+    error.code = payload.code;
+    throw error;
   }
 
-  // Returning social users are already initialized; reuse their Arc wallet.
+  // Circle returns 155106 when the social user is already initialized. Reuse
+  // that user's existing Arc wallet instead of creating another wallet.
   return { wallet: await getCircleWallet(userToken) };
 }
 
