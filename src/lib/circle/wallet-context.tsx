@@ -1,4 +1,4 @@
-import type { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
+import { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
 import {
   SocialLoginProvider,
   type SocialLoginResult,
@@ -57,15 +57,27 @@ const NEXT_ROUTE_KEY = "morrow_circle_next_route";
 const CircleWalletContext = createContext<Context | null>(null);
 
 async function request<T>(path: string, method: "GET" | "POST", body?: unknown): Promise<T> {
-  const response = await fetch(path, {
-    method,
-    headers: body ? { "content-type": "application/json" } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-    credentials: "same-origin",
-  });
-  const payload = (await response.json()) as T & { error?: string };
-  if (!response.ok) throw new Error(payload.error ?? "Circle request failed.");
-  return payload;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 15_000);
+  try {
+    const response = await fetch(path, {
+      method,
+      headers: body ? { "content-type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: "same-origin",
+      signal: controller.signal,
+    });
+    const payload = (await response.json()) as T & { error?: string };
+    if (!response.ok) throw new Error(payload.error ?? "Circle request failed.");
+    return payload;
+  } catch (cause) {
+    if (cause instanceof DOMException && cause.name === "AbortError") {
+      throw new Error("Circle request timed out. Please retry.");
+    }
+    throw cause;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 function safeNext(value: string | null) {
@@ -178,12 +190,8 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
   );
 
   const configure = useCallback(
-    async (
-      publicConfig: SocialConfig,
-      device?: { deviceToken: string; deviceEncryptionKey: string },
-    ) => {
+    (publicConfig: SocialConfig, device?: { deviceToken: string; deviceEncryptionKey: string }) => {
       (globalThis as typeof globalThis & { Buffer?: typeof Buffer }).Buffer ??= Buffer;
-      const { W3SSdk } = await import("@circle-fin/w3s-pw-web-sdk");
       const instance = new W3SSdk(
         {
           appSettings: { appId: publicConfig.appId },
@@ -226,7 +234,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
         const device = saved
           ? (JSON.parse(saved) as { deviceToken: string; deviceEncryptionKey: string })
           : undefined;
-        await configure(publicConfig, device);
+        configure(publicConfig, device);
         if (!cancelled) setSessionStatus("disconnected");
       } catch (cause) {
         if (cancelled) return;
