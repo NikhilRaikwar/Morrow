@@ -151,6 +151,25 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
     throw lastError instanceof Error ? lastError : new Error("Unable to load Circle wallet.");
   }, []);
 
+  const restoreSession = useCallback(
+    async (attempts = 1) => {
+      const restored = await request<
+        { authenticated: false } | { authenticated: true; userToken: string; encryptionKey: string }
+      >("/api/circle/session", "GET");
+      if (!restored.authenticated) {
+        setSession(null);
+        setSessionStatus("expired");
+        throw new Error("Circle session expired. Please sign in again.");
+      }
+      sdk.current?.setAuthentication({
+        userToken: restored.userToken,
+        encryptionKey: restored.encryptionKey,
+      });
+      return loadWallet(restored.userToken, restored.encryptionKey, attempts);
+    },
+    [loadWallet],
+  );
+
   const completeSocialLogin = useCallback(
     async (result: SocialLoginResult) => {
       try {
@@ -252,17 +271,9 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
           ? (JSON.parse(saved) as { deviceToken: string; deviceEncryptionKey: string })
           : undefined;
         configure(publicConfig, device);
-        const restored = await request<
-          | { authenticated: false }
-          | { authenticated: true; userToken: string; encryptionKey: string }
-        >("/api/circle/session", "GET");
         if (cancelled) return;
-        if (restored.authenticated) {
-          sdk.current?.setAuthentication({
-            userToken: restored.userToken,
-            encryptionKey: restored.encryptionKey,
-          });
-          await loadWallet(restored.userToken, restored.encryptionKey, 2);
+        try {
+          await restoreSession(2);
           const current = window.location.pathname;
           if (current === "/" || current === "/connect") {
             const requested = new URL(window.location.href).searchParams.get("next");
@@ -271,13 +282,17 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
               replace: true,
             });
           }
-        } else if (saved && sessionStorage.getItem(NEXT_ROUTE_KEY)) {
-          // A Google OAuth return is still being completed by the Circle SDK.
-          // Keep the dedicated loading screen mounted instead of flashing the
-          // public landing page before the login callback redirects.
-          setSessionStatus("onboarding");
-        } else {
-          setSessionStatus("disconnected");
+        } catch (cause) {
+          if (cancelled) return;
+          if (saved && sessionStorage.getItem(NEXT_ROUTE_KEY)) {
+            // A Google OAuth return is still being completed by the Circle SDK.
+            // Keep the dedicated loading screen mounted instead of flashing the
+            // public landing page before the login callback redirects.
+            setSessionStatus("onboarding");
+          } else {
+            setSessionStatus("disconnected");
+            setError(null);
+          }
         }
       } catch (cause) {
         if (cancelled) return;
@@ -288,7 +303,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [configure, loadWallet, navigate]);
+  }, [configure, navigate, restoreSession]);
 
   const connect = useCallback(async (next = "/dashboard/business") => {
     if (!sdk.current || !config.current) throw new Error("Circle Google login is not ready.");
@@ -340,11 +355,16 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
       setError(null);
       setOperationState("preparing");
       try {
+        const activeSession = await restoreSession();
         const challenge = await request<{ challengeId: string }>("/api/circle/challenge", "POST", {
-          userToken: session.userToken,
-          walletId: session.walletId,
+          userToken: activeSession.userToken,
+          walletId: activeSession.walletId,
           intentId: crypto.randomUUID(),
           action,
+        });
+        sdk.current?.setAuthentication({
+          userToken: activeSession.userToken,
+          encryptionKey: activeSession.encryptionKey,
         });
         setOperationState("awaiting_approval");
         const result = (await approve(challenge.challengeId)) as {
@@ -360,7 +380,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
             correlationIds?: string[];
             errorMessage?: string;
           }>(`/api/circle/challenge/${challenge.challengeId}`, "POST", {
-            userToken: session.userToken,
+            userToken: activeSession.userToken,
           });
           if (circleChallenge.status === "FAILED") {
             throw new Error(circleChallenge.errorMessage ?? "Circle challenge failed.");
@@ -375,7 +395,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
             state?: string;
             txHash?: string;
           }>(`/api/circle/transaction/${transactionId}`, "POST", {
-            userToken: session.userToken,
+            userToken: activeSession.userToken,
           });
           txHash = transaction.txHash ?? txHash;
           if (["COMPLETE", "CONFIRMED"].includes(transaction.state ?? "")) break;
@@ -386,7 +406,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
         }
         if (!txHash)
           throw new Error("Arc confirmation timed out before a transaction hash appeared.");
-        await refresh();
+        await loadWallet(activeSession.userToken, activeSession.encryptionKey);
         setOperationState("confirmed");
         return {
           challengeId: challenge.challengeId,
@@ -400,7 +420,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
         throw cause;
       }
     },
-    [approve, refresh, session],
+    [approve, loadWallet, restoreSession, session],
   );
 
   const disconnect = useCallback(() => {
