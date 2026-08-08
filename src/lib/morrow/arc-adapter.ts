@@ -7,6 +7,10 @@ import { morrowMarketAbi } from "@/contracts/morrowMarket";
 import type { ActivityEvent, Bid, Invoice, InvoiceStatus, Position } from "./types";
 
 const UNITS = 10 ** ARC_USDC_DECIMALS;
+// Final v1 MorrowMarket deployment on Arc Testnet. This is also the earliest
+// block at which any receivable can exist, so it is a truthful fallback for
+// contracts created before the bounded activity-log window below.
+const MORROW_MARKET_DEPLOYMENT_BLOCK = 54_932_826n;
 const asNumber = (value: bigint) => Number(value) / UNITS;
 const addressLabel = (address: string) => `${address.slice(0, 6)}…${address.slice(-4)}`;
 const iso = (seconds: bigint) => new Date(Number(seconds) * 1_000).toISOString();
@@ -27,11 +31,19 @@ export async function readArcMarket(config: MorrowPublicConfig, viewer?: string)
   const client = createArcPublicClient(config.arcRpcUrl);
   const latest = await client.getBlockNumber();
   const fromBlock = latest > 9_999n ? latest - 9_999n : 0n;
-  const logs = await client.getLogs({
-    address: config.marketAddress,
-    fromBlock,
-    toBlock: latest,
-  });
+  const [logs, nextReceivableId, deploymentBlock] = await Promise.all([
+    client.getLogs({
+      address: config.marketAddress,
+      fromBlock,
+      toBlock: latest,
+    }),
+    client.readContract({
+      address: config.marketAddress,
+      abi: morrowMarketAbi,
+      functionName: "nextReceivableId",
+    }),
+    client.getBlock({ blockNumber: MORROW_MARKET_DEPLOYMENT_BLOCK }),
+  ]);
   const events = logs.flatMap((log) => {
     try {
       return [
@@ -42,21 +54,26 @@ export async function readArcMarket(config: MorrowPublicConfig, viewer?: string)
     }
   });
   const created = events.filter((event) => event.eventName === "ReceivableCreated");
+  const receivableIds = Array.from(
+    { length: Math.max(0, Number(nextReceivableId) - 1) },
+    (_, index) => BigInt(index + 1),
+  );
   const blockTimes = new Map<bigint, string>();
   await Promise.all(
     [
       ...new Set(
-        created.map((event) => event.log.blockNumber).filter((n): n is bigint => n != null),
+        events.map((event) => event.log.blockNumber).filter((n): n is bigint => n != null),
       ),
     ].map(async (blockNumber) => {
       const block = await client.getBlock({ blockNumber });
       blockTimes.set(blockNumber, new Date(Number(block.timestamp) * 1_000).toISOString());
     }),
   );
+  const deploymentTime = new Date(Number(deploymentBlock.timestamp) * 1_000).toISOString();
 
   const invoices = await Promise.all(
-    created.map(async (event) => {
-      const id = event.args.receivableId as bigint;
+    receivableIds.map(async (id) => {
+      const event = created.find((candidate) => candidate.args.receivableId === id);
       const result = await client.readContract({
         address: config.marketAddress!,
         abi: morrowMarketAbi,
@@ -134,9 +151,9 @@ export async function readArcMarket(config: MorrowPublicConfig, viewer?: string)
             status: status === 6 ? "settled" : totalLenderPaid > 0n ? "partially_repaid" : "active",
           };
         });
-      const createdAt = event.log.blockNumber
+      const createdAt = event?.log.blockNumber
         ? (blockTimes.get(event.log.blockNumber) ?? new Date().toISOString())
-        : new Date().toISOString();
+        : deploymentTime;
       const invoice: Invoice = {
         id: id.toString(),
         ref: `ARC-${id}`,
