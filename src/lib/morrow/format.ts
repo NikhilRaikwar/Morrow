@@ -122,7 +122,7 @@ export function clearingApr(invoice: Invoice): number | null {
 
 export function termDays(invoice: Invoice): number {
   const ms = new Date(invoice.dueDate).getTime() - new Date(invoice.issueDate).getTime();
-  return Math.max(1, Math.round(ms / 86_400_000));
+  return Math.max(1, Math.ceil(ms / 86_400_000));
 }
 
 export function expectedReturnFor(principal: number, apr: number, days: number): number {

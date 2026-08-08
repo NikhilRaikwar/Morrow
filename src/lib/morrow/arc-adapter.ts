@@ -156,7 +156,10 @@ export async function readArcMarket(config: MorrowPublicConfig, viewer?: string)
         buyerRating: null,
         maxCostApr: Number(maxAprBps) / 100,
         retentionPct: faceValue
-          ? Math.max(0, (1 - Number(advanceRequested) / Number(faceValue)) * 100)
+          ? Math.max(
+              0,
+              Math.round((1 - Number(advanceRequested) / Number(faceValue)) * 10_000) / 100,
+            )
           : 0,
         auctionDurationHours:
           auctionDeadline > 0n
