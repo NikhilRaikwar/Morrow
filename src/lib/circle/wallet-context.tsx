@@ -102,21 +102,32 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const loadWallet = useCallback(async (userToken: string, encryptionKey: string) => {
-    const wallet = await request<{ walletId: string; address: string; balances: unknown[] }>(
-      "/api/circle/wallet",
-      "POST",
-      { userToken },
-    );
-    const next: WalletSession = {
-      userToken,
-      encryptionKey,
-      ...wallet,
-      provider: "Google",
-    };
-    setSession(next);
-    setSessionStatus("connected");
-    return next;
+  const loadWallet = useCallback(async (userToken: string, encryptionKey: string, attempts = 1) => {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      try {
+        const wallet = await request<{
+          walletId: string;
+          address: string;
+          balances: unknown[];
+        }>("/api/circle/wallet", "POST", { userToken });
+        const next: WalletSession = {
+          userToken,
+          encryptionKey,
+          ...wallet,
+          provider: "Google",
+        };
+        setSession(next);
+        setSessionStatus("connected");
+        return next;
+      } catch (cause) {
+        lastError = cause;
+        if (attempt + 1 < attempts) {
+          await new Promise((resolve) => window.setTimeout(resolve, 1_500));
+        }
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error("Unable to load Circle wallet.");
   }, []);
 
   const completeSocialLogin = useCallback(
@@ -139,7 +150,10 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
           await approve(initialized.challengeId);
           setOperationState("confirming");
         }
-        await loadWallet(result.userToken, result.encryptionKey);
+        // Circle may need a few seconds to index a newly created wallet after
+        // the hosted challenge completes. Returning users normally succeed on
+        // the first read; new users get a bounded retry window.
+        await loadWallet(result.userToken, result.encryptionKey, initialized.challengeId ? 7 : 1);
         setOperationState("confirmed");
         sessionStorage.removeItem(DEVICE_SESSION_KEY);
         const destination = safeNext(sessionStorage.getItem(NEXT_ROUTE_KEY));
