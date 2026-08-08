@@ -51,6 +51,7 @@ function BusinessDashboard() {
   const navigate = useNavigate();
   const hash = useRouterState({ select: (router) => router.location.hash });
   const [filter, setFilter] = useState<InvoiceStatus | "all">("all");
+  const [openingId, setOpeningId] = useState<string | null>(null);
 
   useEffect(() => {
     if (hash !== "invoices" && hash !== "#invoices") return;
@@ -302,7 +303,10 @@ function BusinessDashboard() {
                   <div className="flex justify-start lg:justify-end">
                     <InvoiceAction
                       invoice={invoice}
+                      busy={openingId === invoice.id}
                       onOpenAuction={() => {
+                        if (openingId) return;
+                        setOpeningId(invoice.id);
                         void openAuction(invoice.id)
                           .then(() => {
                             toast.success(`Funding auction opened for ${invoice.ref}`, {
@@ -314,7 +318,8 @@ function BusinessDashboard() {
                             toast.error(
                               error instanceof Error ? error.message : "Unable to open auction.",
                             ),
-                          );
+                          )
+                          .finally(() => setOpeningId(null));
                       }}
                       onCopy={() => copyLink(invoice)}
                     />
@@ -331,10 +336,12 @@ function BusinessDashboard() {
 
 function InvoiceAction({
   invoice,
+  busy,
   onOpenAuction,
   onCopy,
 }: {
   invoice: Invoice;
+  busy?: boolean;
   onOpenAuction: () => void;
   onCopy: () => void;
 }) {
@@ -348,8 +355,8 @@ function InvoiceAction({
   }
   if (invoice.status === "buyer_accepted") {
     return (
-      <Button size="sm" onClick={onOpenAuction}>
-        Open auction
+      <Button size="sm" onClick={onOpenAuction} disabled={busy}>
+        {busy ? "Opening..." : "Open auction"}
       </Button>
     );
   }
