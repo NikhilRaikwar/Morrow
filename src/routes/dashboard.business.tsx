@@ -9,7 +9,6 @@ import {
   Amount,
   Disclaimer,
   EmptyState,
-  Pill,
   ProgressBar,
   StatCard,
   StatusPill,
@@ -78,6 +77,7 @@ function BusinessDashboard() {
   }));
 
   const filtered = filter === "all" ? mine : mine.filter((i) => i.status === filter);
+  const walletLabel = `${state.walletAddress.slice(0, 6)}…${state.walletAddress.slice(-4)}`;
 
   const copyLink = (invoice: Invoice) => {
     const link = `${window.location.origin}/invoice/${invoice.id}`;
@@ -91,10 +91,10 @@ function BusinessDashboard() {
     <AppShell>
       <PageHeader
         eyebrow={
-          <p className="mb-1.5 text-[13px] font-medium text-muted-foreground">Good morning, Alex</p>
+          <p className="mb-1.5 text-[13px] font-medium text-muted-foreground">Business workspace</p>
         }
         title="Turn accepted receivables into working capital."
-        description="Aster Studio · Arc Testnet"
+        description={`${walletLabel} · Arc Testnet`}
         actions={
           <Link to="/create-invoice">
             <Button className="gap-2">
@@ -128,9 +128,13 @@ function BusinessDashboard() {
           tone="primary"
         />
         <StatCard
-          label="Average funding time"
-          value={<span className="num text-[30px] font-semibold text-foreground">4m 12s</span>}
-          hint="Auction open to advance released"
+          label="Settled receivables"
+          value={
+            <span className="num text-[30px] font-semibold text-foreground">
+              {mine.filter((invoice) => invoice.status === "settled").length}
+            </span>
+          }
+          hint="Finalized on Arc Testnet"
           icon={<Clock3 className="h-3.5 w-3.5" />}
           tone="neutral"
         />
@@ -138,12 +142,14 @@ function BusinessDashboard() {
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
         <div className="rounded-xl border border-border bg-card p-5 shadow-card">
-          <div className="flex items-baseline justify-between">
+          <div className="flex items-baseline justify-between gap-4">
             <div>
               <h2 className="text-[16px] font-semibold text-foreground">Cash unlocked</h2>
               <p className="text-[12.5px] text-muted-foreground">Monthly financed volume in USDC</p>
             </div>
-            <Pill tone="success">+18% vs last month</Pill>
+            <p className="num text-[12px] font-medium text-muted-foreground">
+              {usdc(financedThisMonth)} USDC financed
+            </p>
           </div>
           <div className="mt-5 h-[240px] w-full">
             <ResponsiveContainer width="100%" height="100%">
