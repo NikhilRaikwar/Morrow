@@ -14,10 +14,23 @@ export const Route = createFileRoute("/api/circle/social/initialize")({
             headers: { "cache-control": "no-store" },
           });
         } catch (error) {
+          const code =
+            error && typeof error === "object" && "code" in error
+              ? Number((error as { code?: unknown }).code)
+              : undefined;
           console.error("Circle social wallet initialization failed", {
             message: error instanceof Error ? error.message : "unknown",
+            code,
           });
-          return Response.json({ error: "Unable to initialize the Arc wallet." }, { status: 400 });
+          return Response.json(
+            {
+              error:
+                code === 155110
+                  ? "Circle PIN setup is required before creating the Arc wallet. Please try again."
+                  : "Unable to initialize the Arc wallet.",
+            },
+            { status: 400 },
+          );
         }
       },
     },

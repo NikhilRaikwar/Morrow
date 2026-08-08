@@ -1,5 +1,6 @@
 import {
   Error155106,
+  Error155110,
   initiateUserControlledWalletsClient,
 } from "@circle-fin/user-controlled-wallets";
 import { getAddress, isAddress, keccak256, stringToHex } from "viem";
@@ -105,6 +106,21 @@ export async function initializeSocialWallet(userToken: string) {
       error && typeof error === "object" && "code" in error
         ? Number((error as { code?: unknown }).code)
         : undefined;
+    if (error instanceof Error155110 || code === Error155110.code) {
+      // Google has already authenticated this user. Some Circle entities use
+      // PIN authorization for sensitive wallet actions; in that configuration
+      // wallet initialization must also set the user's PIN.
+      const initialized = await sdk.createUserPinWithWallets({
+        userToken,
+        blockchains: ["ARC-TESTNET"],
+        accountType: "EOA",
+        idempotencyKey: uuid(),
+      });
+      if (!initialized.data?.challengeId) {
+        throw new Error("Circle did not return a PIN and Arc wallet setup challenge.");
+      }
+      return { challengeId: initialized.data.challengeId };
+    }
     if (!(error instanceof Error155106) && code !== Error155106.code) throw error;
   }
 

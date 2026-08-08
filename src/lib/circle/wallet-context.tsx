@@ -150,6 +150,12 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
         setError(message);
         setSessionStatus("error");
         setOperationState("failed");
+        const destination = safeNext(sessionStorage.getItem(NEXT_ROUTE_KEY));
+        await navigate({
+          to: "/connect",
+          search: { next: destination },
+          replace: true,
+        });
       }
     },
     [approve, loadWallet, navigate],
