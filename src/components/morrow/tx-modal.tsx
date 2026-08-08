@@ -136,7 +136,10 @@ export function TransactionDialog({
         onOpenChange(next);
       }}
     >
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent
+        className={cn("sm:max-w-[440px]", phase === "running" && "pointer-events-none")}
+        overlayClassName={phase === "running" ? "pointer-events-none" : undefined}
+      >
         <DialogHeader>
           <DialogTitle className="text-[17px]">
             {phase === "done" ? successTitle : title}
