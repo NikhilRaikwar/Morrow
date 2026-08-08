@@ -3,10 +3,10 @@ import {
   Error155110,
   initiateUserControlledWalletsClient,
 } from "@circle-fin/user-controlled-wallets";
-import { getAddress, isAddress, keccak256, stringToHex } from "viem";
+import { formatUnits, getAddress, isAddress, keccak256, parseAbi, stringToHex } from "viem";
 import { z } from "zod";
 
-import { ARC_USDC_ADDRESS } from "@/config/arc";
+import { ARC_USDC_ADDRESS, ARC_USDC_DECIMALS, createArcPublicClient } from "@/config/arc";
 import { getMorrowPublicConfig } from "@/config/env";
 
 import { getCircleServerConfig } from "./config.server";
@@ -158,16 +158,28 @@ async function findCircleWallet(userToken: string) {
     .sort((left, right) => left.createDate.localeCompare(right.createDate))[0];
   if (!wallet) return null;
 
-  const balances = await sdk.getWalletTokenBalance({
-    userToken,
-    walletId: wallet.id,
-    includeAll: true,
-  });
+  const [balances, onchainBalance] = await Promise.all([
+    sdk.getWalletTokenBalance({
+      userToken,
+      walletId: wallet.id,
+      includeAll: true,
+      tokenAddresses: [ARC_USDC_ADDRESS],
+    }),
+    createArcPublicClient()
+      .readContract({
+        address: ARC_USDC_ADDRESS,
+        abi: parseAbi(["function balanceOf(address) view returns (uint256)"]),
+        functionName: "balanceOf",
+        args: [getAddress(wallet.address)],
+      })
+      .catch(() => null),
+  ]);
   return {
     walletId: wallet.id,
     address: getAddress(wallet.address),
     blockchain: wallet.blockchain ?? "ARC-TESTNET",
     balances: balances.data?.tokenBalances ?? [],
+    usdcBalance: onchainBalance === null ? null : formatUnits(onchainBalance, ARC_USDC_DECIMALS),
   };
 }
 
@@ -258,4 +270,9 @@ export async function createMorrowChallenge(
 export async function getCircleTransaction(userToken: string, transactionId: string) {
   const result = await client().getTransaction({ userToken, id: transactionId });
   return result.data?.transaction ?? null;
+}
+
+export async function getCircleChallenge(userToken: string, challengeId: string) {
+  const result = await client().getUserChallenge({ userToken, challengeId });
+  return result.data?.challenge ?? null;
 }

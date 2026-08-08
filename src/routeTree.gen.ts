@@ -27,6 +27,7 @@ import { Route as ApiArcRpcRouteImport } from './routes/api.arc.rpc'
 import { Route as ApiCircleChallengeRouteImport } from './routes/api.circle.challenge'
 import { Route as ApiCircleWalletRouteImport } from './routes/api.circle.wallet'
 import { Route as ApiCircleWebhookRouteImport } from './routes/api.circle.webhook'
+import { Route as ApiCircleChallengeIdRouteImport } from './routes/api.circle.challenge.$id'
 import { Route as ApiCircleSocialConfigRouteImport } from './routes/api.circle.social.config'
 import { Route as ApiCircleSocialDeviceTokenRouteImport } from './routes/api.circle.social.device-token'
 import { Route as ApiCircleSocialInitializeRouteImport } from './routes/api.circle.social.initialize'
@@ -122,6 +123,11 @@ const ApiCircleWebhookRoute = ApiCircleWebhookRouteImport.update({
   path: '/api/circle/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCircleChallengeIdRoute = ApiCircleChallengeIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiCircleChallengeRoute,
+} as any)
 const ApiCircleSocialConfigRoute = ApiCircleSocialConfigRouteImport.update({
   id: '/api/circle/social/config',
   path: '/api/circle/social/config',
@@ -161,9 +167,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/lender': typeof DashboardLenderRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/api/arc/rpc': typeof ApiArcRpcRoute
-  '/api/circle/challenge': typeof ApiCircleChallengeRoute
+  '/api/circle/challenge': typeof ApiCircleChallengeRouteWithChildren
   '/api/circle/wallet': typeof ApiCircleWalletRoute
   '/api/circle/webhook': typeof ApiCircleWebhookRoute
+  '/api/circle/challenge/$id': typeof ApiCircleChallengeIdRoute
   '/api/circle/social/config': typeof ApiCircleSocialConfigRoute
   '/api/circle/social/device-token': typeof ApiCircleSocialDeviceTokenRoute
   '/api/circle/social/initialize': typeof ApiCircleSocialInitializeRoute
@@ -185,9 +192,10 @@ export interface FileRoutesByTo {
   '/dashboard/lender': typeof DashboardLenderRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/api/arc/rpc': typeof ApiArcRpcRoute
-  '/api/circle/challenge': typeof ApiCircleChallengeRoute
+  '/api/circle/challenge': typeof ApiCircleChallengeRouteWithChildren
   '/api/circle/wallet': typeof ApiCircleWalletRoute
   '/api/circle/webhook': typeof ApiCircleWebhookRoute
+  '/api/circle/challenge/$id': typeof ApiCircleChallengeIdRoute
   '/api/circle/social/config': typeof ApiCircleSocialConfigRoute
   '/api/circle/social/device-token': typeof ApiCircleSocialDeviceTokenRoute
   '/api/circle/social/initialize': typeof ApiCircleSocialInitializeRoute
@@ -210,9 +218,10 @@ export interface FileRoutesById {
   '/dashboard/lender': typeof DashboardLenderRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/api/arc/rpc': typeof ApiArcRpcRoute
-  '/api/circle/challenge': typeof ApiCircleChallengeRoute
+  '/api/circle/challenge': typeof ApiCircleChallengeRouteWithChildren
   '/api/circle/wallet': typeof ApiCircleWalletRoute
   '/api/circle/webhook': typeof ApiCircleWebhookRoute
+  '/api/circle/challenge/$id': typeof ApiCircleChallengeIdRoute
   '/api/circle/social/config': typeof ApiCircleSocialConfigRoute
   '/api/circle/social/device-token': typeof ApiCircleSocialDeviceTokenRoute
   '/api/circle/social/initialize': typeof ApiCircleSocialInitializeRoute
@@ -239,6 +248,7 @@ export interface FileRouteTypes {
     | '/api/circle/challenge'
     | '/api/circle/wallet'
     | '/api/circle/webhook'
+    | '/api/circle/challenge/$id'
     | '/api/circle/social/config'
     | '/api/circle/social/device-token'
     | '/api/circle/social/initialize'
@@ -263,6 +273,7 @@ export interface FileRouteTypes {
     | '/api/circle/challenge'
     | '/api/circle/wallet'
     | '/api/circle/webhook'
+    | '/api/circle/challenge/$id'
     | '/api/circle/social/config'
     | '/api/circle/social/device-token'
     | '/api/circle/social/initialize'
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '/api/circle/challenge'
     | '/api/circle/wallet'
     | '/api/circle/webhook'
+    | '/api/circle/challenge/$id'
     | '/api/circle/social/config'
     | '/api/circle/social/device-token'
     | '/api/circle/social/initialize'
@@ -309,7 +321,7 @@ export interface RootRouteChildren {
   DashboardLenderRoute: typeof DashboardLenderRoute
   InvoiceIdRoute: typeof InvoiceIdRoute
   ApiArcRpcRoute: typeof ApiArcRpcRoute
-  ApiCircleChallengeRoute: typeof ApiCircleChallengeRoute
+  ApiCircleChallengeRoute: typeof ApiCircleChallengeRouteWithChildren
   ApiCircleWalletRoute: typeof ApiCircleWalletRoute
   ApiCircleWebhookRoute: typeof ApiCircleWebhookRoute
   ApiCircleSocialConfigRoute: typeof ApiCircleSocialConfigRoute
@@ -446,6 +458,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCircleWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/circle/challenge/$id': {
+      id: '/api/circle/challenge/$id'
+      path: '/$id'
+      fullPath: '/api/circle/challenge/$id'
+      preLoaderRoute: typeof ApiCircleChallengeIdRouteImport
+      parentRoute: typeof ApiCircleChallengeRoute
+    }
     '/api/circle/social/config': {
       id: '/api/circle/social/config'
       path: '/api/circle/social/config'
@@ -477,6 +496,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ApiCircleChallengeRouteChildren {
+  ApiCircleChallengeIdRoute: typeof ApiCircleChallengeIdRoute
+}
+
+const ApiCircleChallengeRouteChildren: ApiCircleChallengeRouteChildren = {
+  ApiCircleChallengeIdRoute: ApiCircleChallengeIdRoute,
+}
+
+const ApiCircleChallengeRouteWithChildren =
+  ApiCircleChallengeRoute._addFileChildren(ApiCircleChallengeRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivityRoute: ActivityRoute,
@@ -493,7 +523,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardLenderRoute: DashboardLenderRoute,
   InvoiceIdRoute: InvoiceIdRoute,
   ApiArcRpcRoute: ApiArcRpcRoute,
-  ApiCircleChallengeRoute: ApiCircleChallengeRoute,
+  ApiCircleChallengeRoute: ApiCircleChallengeRouteWithChildren,
   ApiCircleWalletRoute: ApiCircleWalletRoute,
   ApiCircleWebhookRoute: ApiCircleWebhookRoute,
   ApiCircleSocialConfigRoute: ApiCircleSocialConfigRoute,

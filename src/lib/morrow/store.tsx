@@ -85,9 +85,10 @@ export function MorrowProvider({ children }: { children: ReactNode }) {
       (item: CircleBalance) =>
         String(item.token?.symbol ?? item.symbol ?? "").toUpperCase() === "USDC",
     );
-    const balance =
-      Number(usdc?.amount ?? usdc?.tokenAmount ?? 0) /
-      (usdc?.token?.decimals === 6 ? 1 : 1_000_000);
+    // Circle's `amount` is already a human-readable token amount. Prefer the
+    // Arc ERC-20 balanceOf result returned with the wallet, then fall back to
+    // Circle's value without applying the token decimals a second time.
+    const balance = Number(wallet.session?.usdcBalance ?? usdc?.amount ?? usdc?.tokenAmount ?? 0);
     setState((current) => ({
       ...current,
       connected: Boolean(wallet.session),

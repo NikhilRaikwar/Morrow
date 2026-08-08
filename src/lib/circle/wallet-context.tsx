@@ -34,6 +34,7 @@ type WalletSession = {
   walletId: string;
   address: string;
   balances: unknown[];
+  usdcBalance: string | null;
   provider: "Google";
 };
 type SocialConfig = { configured: true; appId: string; googleClientId: string };
@@ -110,6 +111,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
           walletId: string;
           address: string;
           balances: unknown[];
+          usdcBalance: string | null;
         }>("/api/circle/wallet", "POST", { userToken });
         const next: WalletSession = {
           userToken,
@@ -298,12 +300,47 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
           data?: { transactionHash?: string; txHash?: string; transactionId?: string; id?: string };
         };
         setOperationState("confirming");
+        let transactionId = result.data?.transactionId ?? result.data?.id;
+        let txHash = result.data?.transactionHash ?? result.data?.txHash;
+
+        for (let attempt = 0; attempt < 20 && !transactionId; attempt += 1) {
+          const circleChallenge = await request<{
+            status?: string;
+            correlationIds?: string[];
+            errorMessage?: string;
+          }>(`/api/circle/challenge/${challenge.challengeId}`, "POST", {
+            userToken: session.userToken,
+          });
+          if (circleChallenge.status === "FAILED") {
+            throw new Error(circleChallenge.errorMessage ?? "Circle challenge failed.");
+          }
+          transactionId = circleChallenge.correlationIds?.[0];
+          if (!transactionId) await new Promise((resolve) => window.setTimeout(resolve, 1_500));
+        }
+        if (!transactionId) throw new Error("Circle did not return the Arc transaction ID.");
+
+        for (let attempt = 0; attempt < 40; attempt += 1) {
+          const transaction = await request<{
+            state?: string;
+            txHash?: string;
+          }>(`/api/circle/transaction/${transactionId}`, "POST", {
+            userToken: session.userToken,
+          });
+          txHash = transaction.txHash ?? txHash;
+          if (["COMPLETE", "CONFIRMED"].includes(transaction.state ?? "")) break;
+          if (["FAILED", "DENIED", "CANCELLED"].includes(transaction.state ?? "")) {
+            throw new Error(`Arc transaction ${transaction.state?.toLowerCase()}.`);
+          }
+          await new Promise((resolve) => window.setTimeout(resolve, 1_500));
+        }
+        if (!txHash)
+          throw new Error("Arc confirmation timed out before a transaction hash appeared.");
         await refresh();
         setOperationState("confirmed");
         return {
           challengeId: challenge.challengeId,
-          transactionId: result.data?.transactionId ?? result.data?.id,
-          txHash: result.data?.transactionHash ?? result.data?.txHash,
+          transactionId,
+          txHash,
         };
       } catch (cause) {
         const message = errorMessage(cause, "Circle transaction was not completed.");
