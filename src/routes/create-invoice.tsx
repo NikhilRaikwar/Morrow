@@ -80,12 +80,12 @@ function CreateInvoicePage() {
   const [auctionHours, setAuctionHours] = useState("24");
 
   const face = Number(faceValue) || 0;
-  const advance = Math.round((face * advancePct) / 100);
+  const advance = Math.round(((face * advancePct) / 100) * 1_000_000) / 1_000_000;
   const days = useMemo(() => {
     const diff = (new Date(dueDate).getTime() - new Date(issueDate).getTime()) / 86_400_000;
     return Math.max(1, Math.round(diff));
   }, [dueDate, issueDate]);
-  const maxCost = expectedReturnFor(advance, maxCostApr, days) - advance;
+  const maxCost = expectedReturnFor(advance, maxCostApr, days);
 
   const tx = useTxRunner(TX_STEPS);
 
