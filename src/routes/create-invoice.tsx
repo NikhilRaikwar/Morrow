@@ -112,7 +112,7 @@ function CreateInvoicePage() {
       toast.success("Receivable submitted", {
         description: "Circle approval completed; Arc state will refresh shortly.",
       });
-      navigate({ to: "/market" });
+      await navigate({ to: "/dashboard/business", hash: "invoices" });
     });
   };
 

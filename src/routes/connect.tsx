@@ -23,6 +23,9 @@ export const Route = createFileRoute("/connect")({
 });
 
 function safeNext(value: string) {
+  if (value === "buyer") return "/dashboard/buyer";
+  if (value === "lender") return "/dashboard/lender";
+  if (value === "business" || value === "app") return "/dashboard/business";
   return value.startsWith("/") && !value.startsWith("//") ? value : "/dashboard/business";
 }
 function ConnectPage() {

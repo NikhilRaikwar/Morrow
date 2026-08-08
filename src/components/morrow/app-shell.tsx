@@ -4,6 +4,7 @@ import {
   CircleDollarSign,
   ExternalLink,
   FileText,
+  Files,
   HelpCircle,
   LayoutDashboard,
   Menu,
@@ -49,7 +50,10 @@ function navItems(workspace: Workspace) {
       icon: LayoutDashboard,
     },
     ...(workspace === "business"
-      ? [{ label: "Create receivable", to: "/create-invoice", icon: FileText }]
+      ? [
+          { label: "Create receivable", to: "/create-invoice", icon: FileText },
+          { label: "My invoices", to: "/dashboard/business", hash: "invoices", icon: Files },
+        ]
       : []),
     { label: "Public market", to: "/market", icon: Store },
     { label: "Portfolio", to: "/portfolio", icon: PieChart },
@@ -91,6 +95,7 @@ function WorkspaceTabs({ onNavigate }: { onNavigate?: () => void }) {
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { state } = useMorrow();
   const pathname = useRouterState({ select: (router) => router.location.pathname });
+  const currentHash = useRouterState({ select: (router) => router.location.hash });
   return (
     <div className="flex h-full flex-col">
       <div className="px-5 py-5">
@@ -109,10 +114,12 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           <Link
             key={item.label} // eslint-disable-next-line @typescript-eslint/no-explicit-any
             to={item.to as any}
+            hash={"hash" in item ? item.hash : undefined}
             onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors",
-              pathname === item.to
+              pathname === item.to &&
+                (!("hash" in item) || currentHash === item.hash || currentHash === `#${item.hash}`)
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}

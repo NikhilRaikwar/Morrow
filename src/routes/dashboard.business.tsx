@@ -1,6 +1,6 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
 import { ArrowUpRight, Banknote, Clock3, Copy, Plus, TrendingUp, Wallet } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 
@@ -49,7 +49,16 @@ const PIPELINE: { status: InvoiceStatus; label: string }[] = [
 function BusinessDashboard() {
   const { state, openAuction } = useMorrow();
   const navigate = useNavigate();
+  const hash = useRouterState({ select: (router) => router.location.hash });
   const [filter, setFilter] = useState<InvoiceStatus | "all">("all");
+
+  useEffect(() => {
+    if (hash !== "invoices" && hash !== "#invoices") return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("invoices")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [hash]);
 
   const mine = useMemo(() => state.invoices.filter((i) => i.ownedByUserBusiness), [state.invoices]);
 

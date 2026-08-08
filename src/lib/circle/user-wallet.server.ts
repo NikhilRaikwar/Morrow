@@ -86,6 +86,40 @@ export async function createSocialDeviceToken(deviceId: string) {
   return { deviceToken, deviceEncryptionKey };
 }
 
+export async function refreshSocialSession(session: {
+  userToken: string;
+  refreshToken: string;
+  deviceId: string;
+}) {
+  const config = getCircleServerConfig();
+  if (!config.configured) throw new Error("Circle Wallets are not configured on this deployment.");
+  const response = await fetch("https://api.circle.com/v1/w3s/users/token/refresh", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${config.apiKey}`,
+      "content-type": "application/json",
+      "x-user-token": session.userToken,
+      "x-request-id": uuid(),
+    },
+    body: JSON.stringify({
+      idempotencyKey: uuid(),
+      refreshToken: session.refreshToken,
+      deviceId: session.deviceId,
+    }),
+  });
+  const payload = (await response.json()) as {
+    data?: { userToken?: string; encryptionKey?: string; refreshToken?: string };
+    message?: string;
+  };
+  const userToken = payload.data?.userToken;
+  const encryptionKey = payload.data?.encryptionKey;
+  const refreshToken = payload.data?.refreshToken;
+  if (!response.ok || !userToken || !encryptionKey || !refreshToken) {
+    throw new Error(payload.message ?? "Circle session refresh failed.");
+  }
+  return { userToken, encryptionKey, refreshToken };
+}
+
 export async function initializeSocialWallet(userToken: string) {
   try {
     const existing = await findCircleWallet(userToken);

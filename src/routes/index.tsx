@@ -182,7 +182,7 @@ function Hero() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link to="/connect" search={{ next: "app" }}>
+            <Link to="/connect" search={{ next: "/dashboard/business" }}>
               <Button size="lg" className="gap-2">
                 Launch app
                 <ArrowRight className="h-4 w-4" />
@@ -390,7 +390,7 @@ function FinalCta() {
             Circle wallet approvals on Arc Testnet.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link to="/connect" search={{ next: "app" }}>
+            <Link to="/connect" search={{ next: "/dashboard/business" }}>
               <Button size="lg" className="gap-2">
                 Launch app
                 <ArrowRight className="h-4 w-4" />

@@ -25,6 +25,7 @@ import { Route as DashboardLenderRouteImport } from './routes/dashboard.lender'
 import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
 import { Route as ApiArcRpcRouteImport } from './routes/api.arc.rpc'
 import { Route as ApiCircleChallengeRouteImport } from './routes/api.circle.challenge'
+import { Route as ApiCircleSessionRouteImport } from './routes/api.circle.session'
 import { Route as ApiCircleWalletRouteImport } from './routes/api.circle.wallet'
 import { Route as ApiCircleWebhookRouteImport } from './routes/api.circle.webhook'
 import { Route as ApiCircleChallengeIdRouteImport } from './routes/api.circle.challenge.$id'
@@ -113,6 +114,11 @@ const ApiCircleChallengeRoute = ApiCircleChallengeRouteImport.update({
   path: '/api/circle/challenge',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCircleSessionRoute = ApiCircleSessionRouteImport.update({
+  id: '/api/circle/session',
+  path: '/api/circle/session',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCircleWalletRoute = ApiCircleWalletRouteImport.update({
   id: '/api/circle/wallet',
   path: '/api/circle/wallet',
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/invoice/$id': typeof InvoiceIdRoute
   '/api/arc/rpc': typeof ApiArcRpcRoute
   '/api/circle/challenge': typeof ApiCircleChallengeRouteWithChildren
+  '/api/circle/session': typeof ApiCircleSessionRoute
   '/api/circle/wallet': typeof ApiCircleWalletRoute
   '/api/circle/webhook': typeof ApiCircleWebhookRoute
   '/api/circle/challenge/$id': typeof ApiCircleChallengeIdRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByTo {
   '/invoice/$id': typeof InvoiceIdRoute
   '/api/arc/rpc': typeof ApiArcRpcRoute
   '/api/circle/challenge': typeof ApiCircleChallengeRouteWithChildren
+  '/api/circle/session': typeof ApiCircleSessionRoute
   '/api/circle/wallet': typeof ApiCircleWalletRoute
   '/api/circle/webhook': typeof ApiCircleWebhookRoute
   '/api/circle/challenge/$id': typeof ApiCircleChallengeIdRoute
@@ -219,6 +227,7 @@ export interface FileRoutesById {
   '/invoice/$id': typeof InvoiceIdRoute
   '/api/arc/rpc': typeof ApiArcRpcRoute
   '/api/circle/challenge': typeof ApiCircleChallengeRouteWithChildren
+  '/api/circle/session': typeof ApiCircleSessionRoute
   '/api/circle/wallet': typeof ApiCircleWalletRoute
   '/api/circle/webhook': typeof ApiCircleWebhookRoute
   '/api/circle/challenge/$id': typeof ApiCircleChallengeIdRoute
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/invoice/$id'
     | '/api/arc/rpc'
     | '/api/circle/challenge'
+    | '/api/circle/session'
     | '/api/circle/wallet'
     | '/api/circle/webhook'
     | '/api/circle/challenge/$id'
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
     | '/invoice/$id'
     | '/api/arc/rpc'
     | '/api/circle/challenge'
+    | '/api/circle/session'
     | '/api/circle/wallet'
     | '/api/circle/webhook'
     | '/api/circle/challenge/$id'
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/invoice/$id'
     | '/api/arc/rpc'
     | '/api/circle/challenge'
+    | '/api/circle/session'
     | '/api/circle/wallet'
     | '/api/circle/webhook'
     | '/api/circle/challenge/$id'
@@ -322,6 +334,7 @@ export interface RootRouteChildren {
   InvoiceIdRoute: typeof InvoiceIdRoute
   ApiArcRpcRoute: typeof ApiArcRpcRoute
   ApiCircleChallengeRoute: typeof ApiCircleChallengeRouteWithChildren
+  ApiCircleSessionRoute: typeof ApiCircleSessionRoute
   ApiCircleWalletRoute: typeof ApiCircleWalletRoute
   ApiCircleWebhookRoute: typeof ApiCircleWebhookRoute
   ApiCircleSocialConfigRoute: typeof ApiCircleSocialConfigRoute
@@ -444,6 +457,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCircleChallengeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/circle/session': {
+      id: '/api/circle/session'
+      path: '/api/circle/session'
+      fullPath: '/api/circle/session'
+      preLoaderRoute: typeof ApiCircleSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/circle/wallet': {
       id: '/api/circle/wallet'
       path: '/api/circle/wallet'
@@ -524,6 +544,7 @@ const rootRouteChildren: RootRouteChildren = {
   InvoiceIdRoute: InvoiceIdRoute,
   ApiArcRpcRoute: ApiArcRpcRoute,
   ApiCircleChallengeRoute: ApiCircleChallengeRouteWithChildren,
+  ApiCircleSessionRoute: ApiCircleSessionRoute,
   ApiCircleWalletRoute: ApiCircleWalletRoute,
   ApiCircleWebhookRoute: ApiCircleWebhookRoute,
   ApiCircleSocialConfigRoute: ApiCircleSocialConfigRoute,

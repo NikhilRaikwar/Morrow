@@ -56,7 +56,11 @@ const DEVICE_ID_KEY = "morrow_circle_device_id";
 const NEXT_ROUTE_KEY = "morrow_circle_next_route";
 const CircleWalletContext = createContext<Context | null>(null);
 
-async function request<T>(path: string, method: "GET" | "POST", body?: unknown): Promise<T> {
+async function request<T>(
+  path: string,
+  method: "GET" | "POST" | "DELETE",
+  body?: unknown,
+): Promise<T> {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 15_000);
   try {
@@ -81,6 +85,9 @@ async function request<T>(path: string, method: "GET" | "POST", body?: unknown):
 }
 
 function safeNext(value: string | null) {
+  if (value === "buyer") return "/dashboard/buyer";
+  if (value === "lender") return "/dashboard/lender";
+  if (value === "business" || value === "app") return "/dashboard/business";
   return value?.startsWith("/") && !value.startsWith("//") ? value : "/dashboard/business";
 }
 
@@ -168,6 +175,13 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
         // the hosted challenge completes. Returning users normally succeed on
         // the first read; new users get a bounded retry window.
         await loadWallet(result.userToken, result.encryptionKey, initialized.challengeId ? 7 : 1);
+        const deviceId = localStorage.getItem(DEVICE_ID_KEY);
+        if (!deviceId) throw new Error("Circle device identity is missing. Please sign in again.");
+        await request("/api/circle/session", "POST", {
+          userToken: result.userToken,
+          refreshToken: result.refreshToken,
+          deviceId,
+        });
         setOperationState("confirmed");
         sessionStorage.removeItem(DEVICE_SESSION_KEY);
         const destination = safeNext(sessionStorage.getItem(NEXT_ROUTE_KEY));
@@ -210,6 +224,9 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
             setError(loginError.message);
             setSessionStatus("error");
             setOperationState("failed");
+            sessionStorage.removeItem(DEVICE_SESSION_KEY);
+            const destination = safeNext(sessionStorage.getItem(NEXT_ROUTE_KEY));
+            void navigate({ to: "/connect", search: { next: destination }, replace: true });
           } else if (result && "oAuthInfo" in result) {
             void completeSocialLogin(result);
           }
@@ -217,7 +234,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
       );
       sdk.current = instance;
     },
-    [completeSocialLogin],
+    [completeSocialLogin, navigate],
   );
 
   useEffect(() => {
@@ -235,7 +252,33 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
           ? (JSON.parse(saved) as { deviceToken: string; deviceEncryptionKey: string })
           : undefined;
         configure(publicConfig, device);
-        if (!cancelled) setSessionStatus("disconnected");
+        const restored = await request<
+          | { authenticated: false }
+          | { authenticated: true; userToken: string; encryptionKey: string }
+        >("/api/circle/session", "GET");
+        if (cancelled) return;
+        if (restored.authenticated) {
+          sdk.current?.setAuthentication({
+            userToken: restored.userToken,
+            encryptionKey: restored.encryptionKey,
+          });
+          await loadWallet(restored.userToken, restored.encryptionKey, 2);
+          const current = window.location.pathname;
+          if (current === "/" || current === "/connect") {
+            const requested = new URL(window.location.href).searchParams.get("next");
+            await navigate({
+              to: safeNext(requested) as "/dashboard/business",
+              replace: true,
+            });
+          }
+        } else if (saved && sessionStorage.getItem(NEXT_ROUTE_KEY)) {
+          // A Google OAuth return is still being completed by the Circle SDK.
+          // Keep the dedicated loading screen mounted instead of flashing the
+          // public landing page before the login callback redirects.
+          setSessionStatus("onboarding");
+        } else {
+          setSessionStatus("disconnected");
+        }
       } catch (cause) {
         if (cancelled) return;
         setError(errorMessage(cause, "Unable to initialize Circle login."));
@@ -245,7 +288,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [configure]);
+  }, [configure, loadWallet, navigate]);
 
   const connect = useCallback(async (next = "/dashboard/business") => {
     if (!sdk.current || !config.current) throw new Error("Circle Google login is not ready.");
@@ -368,6 +411,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
     setSessionStatus("disconnected");
     setOperationState("idle");
     setError(null);
+    void request("/api/circle/session", "DELETE").catch(() => undefined);
     if (config.current) void configure(config.current);
   }, [configure]);
 
@@ -384,6 +428,21 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
     }),
     [session, sessionStatus, operationState, error, connect, refresh, execute, disconnect],
   );
+  if (sessionStatus === "loading" || sessionStatus === "onboarding") {
+    return (
+      <div className="grid min-h-screen place-items-center bg-white px-6 text-center">
+        <div>
+          <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+          <p className="mt-4 text-[14px] font-medium text-foreground">
+            Restoring your Circle wallet…
+          </p>
+          <p className="mt-1 text-[12.5px] text-muted-foreground">
+            Returning you to the Morrow application.
+          </p>
+        </div>
+      </div>
+    );
+  }
   return <CircleWalletContext.Provider value={value}>{children}</CircleWalletContext.Provider>;
 }
 

@@ -130,6 +130,7 @@ export function TransactionDialog({
 }) {
   return (
     <Dialog
+      modal={phase !== "running"}
       open={open}
       onOpenChange={(next) => {
         if (!next && phase === "running") return;
