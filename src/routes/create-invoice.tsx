@@ -96,24 +96,38 @@ function CreateInvoicePage() {
     days > 0;
 
   const submit = () => {
+    if (tx.phase === "running") return;
     setOpen(true);
-    void tx.run(async () => {
-      const result = await createInvoice({
-        buyerAddress,
-        reference: reference.trim(),
-        description: description.trim(),
-        faceValue: face,
-        dueDate,
-        advanceRequested: advance,
-        maxCostApr,
-        auctionDurationHours: Number(auctionHours),
-      });
-      setTxHash(result.txHash ?? "");
-      toast.success("Receivable submitted", {
-        description: "Circle approval completed; Arc state will refresh shortly.",
-      });
-      await navigate({ to: "/dashboard/business", hash: "invoices" });
+    const toastId = toast.loading("Opening Circle approval…", {
+      description: "Confirm the MorrowMarket transaction in the secure Circle dialog.",
     });
+    void tx
+      .run(async () => {
+        const result = await createInvoice({
+          buyerAddress,
+          reference: reference.trim(),
+          description: description.trim(),
+          faceValue: face,
+          dueDate,
+          advanceRequested: advance,
+          maxCostApr,
+          auctionDurationHours: Number(auctionHours),
+        });
+        setTxHash(result.txHash ?? "");
+        toast.success("Receivable confirmed on Arc", {
+          id: toastId,
+          description: "Opening My invoices…",
+        });
+        await navigate({ to: "/dashboard/business", hash: "invoices" });
+      })
+      .catch((cause: unknown) => {
+        setOpen(false);
+        toast.error("Invoice was not registered", {
+          id: toastId,
+          description:
+            cause instanceof Error ? cause.message : "Circle approval was cancelled or failed.",
+        });
+      });
   };
 
   const copyLink = () => {
@@ -413,8 +427,8 @@ function CreateInvoicePage() {
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               ) : (
-                <Button className="gap-2" onClick={submit}>
-                  Sign & register invoice
+                <Button className="gap-2" disabled={tx.phase === "running"} onClick={submit}>
+                  {tx.phase === "running" ? "Confirming on Arc…" : "Sign & register invoice"}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               )}

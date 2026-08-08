@@ -1,6 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
+  Copy,
   CircleDollarSign,
   ExternalLink,
   FileText,
@@ -15,6 +16,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -222,12 +224,31 @@ function AccountMenu() {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" className="w-[min(22rem,calc(100vw-2rem))]">
         <DropdownMenuLabel>
           <span className="block text-[11px] text-muted-foreground">
             Circle wallet on Arc Testnet
           </span>
-          <span className="num mt-1 block text-[12px]">{address}</span>
+          <span className="mt-1 flex min-w-0 items-center gap-2">
+            <span className="num min-w-0 flex-1 break-all text-[12px] leading-5">{address}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0"
+              aria-label="Copy wallet address"
+              title="Copy wallet address"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                void navigator.clipboard.writeText(address).then(() => {
+                  toast.success("Wallet address copied");
+                });
+              }}
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+          </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>

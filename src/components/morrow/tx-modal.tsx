@@ -106,9 +106,6 @@ export function TxSteps({
 export function TransactionDialog({
   open,
   onOpenChange,
-  title,
-  steps,
-  current,
   phase,
   successTitle,
   successBody,
@@ -128,63 +125,44 @@ export function TransactionDialog({
   onClose?: () => void;
   closeLabel?: string;
 }) {
+  // Circle renders its own secure approval dialog in an iframe. Mounting a
+  // second Radix modal while that challenge is active creates duplicate
+  // overlays and can trap pointer/focus events. Morrow only shows its receipt
+  // dialog after Circle and Arc have both confirmed the transaction.
+  if (!open || phase !== "done") return null;
+
   return (
-    <Dialog
-      modal={phase !== "running"}
-      open={open}
-      onOpenChange={(next) => {
-        if (!next && phase === "running") return;
-        onOpenChange(next);
-      }}
-    >
-      <DialogContent
-        className={cn("sm:max-w-[440px]", phase === "running" && "!pointer-events-none")}
-        overlayClassName={phase === "running" ? "!pointer-events-none" : undefined}
-      >
+    <Dialog modal open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
-          <DialogTitle className="text-[17px]">
-            {phase === "done" ? successTitle : title}
-          </DialogTitle>
+          <DialogTitle className="text-[17px]">{successTitle}</DialogTitle>
         </DialogHeader>
 
-        {phase === "done" ? (
-          <div className="animate-scale-in space-y-4">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-success-soft text-success">
-              <Check className="h-6 w-6" />
-            </div>
-            {successBody}
-            {txHash ? (
-              <div className="rounded-lg border border-border bg-surface px-3 py-2.5">
-                <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                  Arc transaction
-                </p>
-                <TxLink hash={txHash} />
-              </div>
-            ) : null}
-            <div className="flex items-center justify-between gap-3 pt-1">
-              <span className="text-[12px] text-muted-foreground">Confirmed on Arc Testnet</span>
-              <Button
-                onClick={() => {
-                  onOpenChange(false);
-                  onClose?.();
-                }}
-              >
-                {closeLabel}
-              </Button>
-            </div>
+        <div className="animate-scale-in space-y-4">
+          <div className="grid h-12 w-12 place-items-center rounded-full bg-success-soft text-success">
+            <Check className="h-6 w-6" />
           </div>
-        ) : (
-          <div className="space-y-4">
-            <TxSteps steps={steps} current={current} phase={phase} />
-            <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
-              <span className="text-[12px] text-muted-foreground">Awaiting Circle approval</span>
-              <span className="inline-flex items-center gap-2 text-[12px] text-muted-foreground">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Arc Testnet
-              </span>
+          {successBody}
+          {txHash ? (
+            <div className="rounded-lg border border-border bg-surface px-3 py-2.5">
+              <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                Arc transaction
+              </p>
+              <TxLink hash={txHash} />
             </div>
+          ) : null}
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <span className="text-[12px] text-muted-foreground">Confirmed on Arc Testnet</span>
+            <Button
+              onClick={() => {
+                onOpenChange(false);
+                onClose?.();
+              }}
+            >
+              {closeLabel}
+            </Button>
           </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   );
