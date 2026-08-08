@@ -63,10 +63,10 @@ export async function readArcMarket(config: MorrowPublicConfig, viewer?: string)
         functionName: "getReceivable",
         args: [id],
       });
-      const [
+      const {
         seller,
         buyer,
-        digest,
+        documentDigest: digest,
         dueDate,
         auctionDeadline,
         maxAprBps,
@@ -78,7 +78,7 @@ export async function readArcMarket(config: MorrowPublicConfig, viewer?: string)
         totalLenderDue,
         totalLenderPaid,
         totalRepaid,
-      ] = result;
+      } = result;
       const bidCount = await client.readContract({
         address: config.marketAddress!,
         abi: morrowMarketAbi,
