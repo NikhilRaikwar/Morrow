@@ -169,7 +169,18 @@ function GlobalSearch() {
         ? []
         : state.invoices
             .filter((invoice) =>
-              [invoice.ref, invoice.buyerName, invoice.sellerName]
+              [
+                invoice.ref,
+                invoice.buyerName,
+                invoice.sellerName,
+                invoice.buyerAddress,
+                invoice.sellerAddress,
+                invoice.description,
+                invoice.status,
+                invoice.docHash,
+                invoice.poHash,
+                invoice.deliveryHash,
+              ]
                 .join(" ")
                 .toLowerCase()
                 .includes(query.toLowerCase()),

@@ -40,37 +40,51 @@ Morrow sits at the intersection of those three shifts: invoice finance, stableco
 
 ## Product Flow
 
-```mermaid
-%%{init: {"theme":"base","themeVariables":{"fontFamily":"Inter, Arial","primaryColor":"#eff6ff","primaryTextColor":"#0f172a","primaryBorderColor":"#2563eb","secondaryColor":"#dcfce7","tertiaryColor":"#fef3c7","lineColor":"#64748b"}}}%%
-flowchart LR
-  business["Business<br/>creates receivable"]:::actor --> buyer["Buyer<br/>accepts invoice"]:::actor
-  buyer --> market["MorrowMarket<br/>on Arc"]:::contract
-  lenders["Lenders<br/>bid USDC"]:::actor --> auction["Reverse auction<br/>lowest APR wins"]:::auction
-  market --> auction
-  auction --> advance["USDC advance<br/>to business"]:::money
-  buyerPay["Buyer repayment<br/>USDC"]:::money --> waterfall["Settlement waterfall"]:::contract
-  waterfall --> fee["Protocol fee"]:::money
-  waterfall --> lenderClaims["Lender principal<br/>+ return"]:::money
-  waterfall --> remainder["Business remainder"]:::money
+### Receivable Funding Flow
 
-  classDef actor fill:#eff6ff,stroke:#2563eb,color:#0f172a;
-  classDef contract fill:#111827,stroke:#2563eb,color:#ffffff;
-  classDef auction fill:#fef3c7,stroke:#d97706,color:#111827;
-  classDef money fill:#dcfce7,stroke:#16a34a,color:#052e16;
+```mermaid
+%%{init: {"theme":"base","flowchart":{"htmlLabels":true,"nodeSpacing":70,"rankSpacing":72},"themeVariables":{"fontFamily":"Inter, Arial","fontSize":"17px","primaryTextColor":"#0f172a","lineColor":"#64748b"}}}%%
+flowchart TD
+  A["<b>1. Business creates receivable</b><br/>Seller, buyer, face value, advance, due date"]:::blue
+  B["<b>2. Buyer accepts invoice</b><br/>Payment obligation is confirmed on Arc"]:::blue
+  C["<b>3. Seller opens auction</b><br/>Lenders bid USDC with their required APR"]:::yellow
+  D["<b>4. Auction clears</b><br/>Lowest APR bids fill the advance first"]:::purple
+  E["<b>5. Advance is released</b><br/>Business receives USDC working capital"]:::green
+  F["<b>6. Buyer repays</b><br/>USDC enters the settlement vault"]:::green
+  G["<b>7. Waterfall settles</b><br/>Protocol fee, lenders, then business remainder"]:::green
+
+  A --> B --> C --> D --> E --> F --> G
+
+  classDef blue fill:#dbeafe,stroke:#2563eb,color:#0f172a,stroke-width:2px;
+  classDef yellow fill:#fef3c7,stroke:#d97706,color:#111827,stroke-width:2px;
+  classDef purple fill:#e0e7ff,stroke:#4f46e5,color:#111827,stroke-width:2px;
+  classDef green fill:#dcfce7,stroke:#16a34a,color:#052e16,stroke-width:2px;
 ```
 
+### Receivable State Machine
+
 ```mermaid
-%%{init: {"theme":"base","themeVariables":{"fontFamily":"Inter, Arial","primaryColor":"#e0e7ff","primaryTextColor":"#111827","primaryBorderColor":"#4f46e5","secondaryColor":"#dcfce7","tertiaryColor":"#fee2e2","lineColor":"#64748b"}}}%%
-stateDiagram-v2
-  [*] --> AwaitingBuyer: create receivable
-  AwaitingBuyer --> BuyerAccepted: buyer accepts
-  AwaitingBuyer --> Cancelled: buyer rejects or seller cancels
-  BuyerAccepted --> AuctionLive: seller opens auction
-  AuctionLive --> Funded: auction finalized
-  AuctionLive --> Cancelled: unfilled auction cancelled
-  Funded --> PartiallyRepaid: partial repayment
-  PartiallyRepaid --> Settled: final repayment
-  Funded --> Settled: full repayment
+%%{init: {"theme":"base","flowchart":{"nodeSpacing":64,"rankSpacing":70},"themeVariables":{"fontFamily":"Inter, Arial","fontSize":"17px","primaryTextColor":"#0f172a","lineColor":"#64748b"}}}%%
+flowchart TD
+  start(["Create receivable"]):::start
+  awaiting["Awaiting buyer"]:::state
+  accepted["Buyer accepted"]:::state
+  live["Auction live"]:::state
+  funded["Funded"]:::state
+  partial["Partially repaid"]:::state
+  settled["Settled"]:::done
+  cancelled["Cancelled or rejected"]:::stop
+
+  start --> awaiting --> accepted --> live --> funded
+  funded --> partial --> settled
+  funded --> settled
+  awaiting -.-> cancelled
+  live -.-> cancelled
+
+  classDef start fill:#f8fafc,stroke:#475569,color:#0f172a,stroke-width:2px;
+  classDef state fill:#dbeafe,stroke:#2563eb,color:#0f172a,stroke-width:2px;
+  classDef done fill:#dcfce7,stroke:#16a34a,color:#052e16,stroke-width:2px;
+  classDef stop fill:#fee2e2,stroke:#dc2626,color:#7f1d1d,stroke-width:2px;
 ```
 
 ## Why Arc and Circle

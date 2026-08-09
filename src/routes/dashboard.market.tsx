@@ -36,7 +36,18 @@ function ConnectedMarketPage() {
       .filter(isMarketVisible)
       .filter((invoice) =>
         normalized
-          ? [invoice.ref, invoice.sellerName, invoice.buyerName]
+          ? [
+              invoice.ref,
+              invoice.sellerName,
+              invoice.buyerName,
+              invoice.sellerAddress,
+              invoice.buyerAddress,
+              invoice.description,
+              invoice.status,
+              invoice.docHash,
+              invoice.poHash,
+              invoice.deliveryHash,
+            ]
               .join(" ")
               .toLowerCase()
               .includes(normalized)
