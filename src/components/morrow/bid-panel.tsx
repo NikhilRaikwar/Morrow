@@ -27,15 +27,13 @@ import type { BidSource, Invoice } from "@/lib/morrow/types";
 import { cn } from "@/lib/utils";
 
 const BID_STEPS = [
-  { label: "Locking USDC commitment", detail: "Reserving funds in your Arc wallet" },
-  { label: "Submitting bid to auction", detail: "Rate, size and duration limit" },
+  { label: "Approving USDC", detail: "Allowing MorrowMarket to escrow this bid" },
+  { label: "Escrowing bid on Arc", detail: "Amount and APR are written to the auction" },
   { label: "Confirming on Arc", detail: "Bid is live and competing" },
 ];
 
 const SOURCES: { id: BidSource; label: string; hint: string }[] = [
-  { id: "arc", label: "Arc wallet", hint: "Instant" },
-  { id: "unified", label: "Unified balance", hint: "Base + Ethereum + Arc" },
-  { id: "bridge", label: "Bridge from Base", hint: "~20s via CCTP" },
+  { id: "arc", label: "Arc wallet", hint: "Real test USDC escrow" },
 ];
 
 export function BidDialog({
@@ -245,7 +243,8 @@ export function BidDialog({
                   Place bid for {usdc(value)} USDC
                 </Button>
                 <Disclaimer>
-                  Simulated auction. Lowest rates fill first until the advance is covered.
+                  Real Arc auction. Lowest APR bids fill first until the requested advance is
+                  covered; unused escrow is refundable after finalization.
                 </Disclaimer>
               </div>
             </>

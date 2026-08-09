@@ -31,7 +31,7 @@ export async function readArcMarket(config: MorrowPublicConfig, viewer?: string)
   const client = createArcPublicClient(config.arcRpcUrl);
   const latest = await client.getBlockNumber();
   const fromBlock = latest > 9_999n ? latest - 9_999n : 0n;
-  const [logs, nextReceivableId, deploymentBlock] = await Promise.all([
+  const [logs, nextReceivableId, deploymentBlock, servicingFeeBps] = await Promise.all([
     client.getLogs({
       address: config.marketAddress,
       fromBlock,
@@ -43,6 +43,11 @@ export async function readArcMarket(config: MorrowPublicConfig, viewer?: string)
       functionName: "nextReceivableId",
     }),
     client.getBlock({ blockNumber: MORROW_MARKET_DEPLOYMENT_BLOCK }),
+    client.readContract({
+      address: config.marketAddress,
+      abi: morrowMarketAbi,
+      functionName: "servicingFeeBps",
+    }),
   ]);
   const events = logs.flatMap((log) => {
     try {
@@ -115,6 +120,8 @@ export async function readArcMarket(config: MorrowPublicConfig, viewer?: string)
         invoiceId: id.toString(),
         lenderName: addressLabel(bid.lender),
         amount: asNumber(bid.amount),
+        acceptedAmount: asNumber(bid.acceptedAmount),
+        refundedAmount: asNumber(bid.refundedAmount),
         apr: Number(bid.aprBps) / 100,
         maxDurationDays: Math.max(
           1,
@@ -190,13 +197,14 @@ export async function readArcMarket(config: MorrowPublicConfig, viewer?: string)
         auctionEndsAt: auctionDeadline > 0n ? iso(auctionDeadline) : null,
         bids,
         positions,
-        clearingApr: fundedPrincipal
-          ? bids.reduce((total, bid) => total + bid.amount * bid.apr, 0) /
+        clearingApr: positions.length
+          ? positions.reduce((total, position) => total + position.principal * position.apr, 0) /
             Math.max(
               1,
-              bids.reduce((total, bid) => total + bid.amount, 0),
+              positions.reduce((total, position) => total + position.principal, 0),
             )
           : null,
+        servicingFeeBps: Number(servicingFeeBps),
         advanceReleased: asNumber(fundedPrincipal),
         amountPaid: asNumber(totalRepaid),
         poRef: "",

@@ -20,6 +20,8 @@ export interface Bid {
   invoiceId: string;
   lenderName: string;
   amount: number;
+  acceptedAmount: number;
+  refundedAmount: number;
   apr: number;
   maxDurationDays: number;
   source: BidSource;
@@ -63,6 +65,7 @@ export interface Invoice {
   bids: Bid[];
   positions: Position[];
   clearingApr: number | null;
+  servicingFeeBps: number;
   advanceReleased: number;
   amountPaid: number;
   poRef: string;

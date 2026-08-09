@@ -108,9 +108,11 @@ function AuctionRoom() {
   }
 
   const live = invoice.status === "auction_live";
+  const isSeller = invoice.ownedByUserBusiness;
   const remaining = Math.max(0, invoice.advanceRequested - fundedAmount(invoice));
   const blended = clearingApr(invoice);
   const filled = fundedPct(invoice);
+  const fullyCovered = fundedAmount(invoice) >= invoice.advanceRequested;
 
   // Determine which bids would win at the current book.
   let cumulative = 0;
@@ -293,12 +295,21 @@ function AuctionRoom() {
 
             {live ? (
               <div className="mt-5 space-y-2">
-                <Button className="w-full" onClick={finalize} disabled={invoice.bids.length === 0}>
-                  Finalize auction
-                </Button>
-                <p className="text-center text-[11.5px] text-muted-foreground">
-                  Sellers can close early once the advance is covered.
-                </p>
+                {isSeller ? (
+                  <>
+                    <Button className="w-full" onClick={finalize} disabled={!fullyCovered}>
+                      Finalize auction
+                    </Button>
+                    <p className="text-center text-[11.5px] text-muted-foreground">
+                      Seller-only action. Enabled once bids cover the requested advance.
+                    </p>
+                  </>
+                ) : (
+                  <div className="rounded-lg border border-border bg-surface p-3 text-[12.5px] text-muted-foreground">
+                    Only the seller wallet can finalize this auction. Lenders can bid while the
+                    auction is live and claim unused escrow after finalization.
+                  </div>
+                )}
               </div>
             ) : (
               <div className="mt-5 rounded-lg border border-success/20 bg-success-soft p-3 text-[12.5px] text-foreground">

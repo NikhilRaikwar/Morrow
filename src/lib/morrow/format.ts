@@ -1,6 +1,6 @@
 import type { Invoice, InvoiceStatus, Position, WaterfallLeg } from "./types";
 
-export const PROTOCOL_FEE_BPS = 50; // 0.5% of face value
+export const PROTOCOL_FEE_BPS = 100; // fallback only; live Arc reads use contract servicingFeeBps
 export const ARCSCAN_BASE = "https://testnet.arcscan.app/tx/";
 export const USER_LENDER_NAME = "Your capital";
 
@@ -100,6 +100,16 @@ export const STATUS_TONE: Record<InvoiceStatus, StatusTone> = {
 };
 
 export function fundedAmount(invoice: Invoice): number {
+  if (
+    invoice.status === "funded" ||
+    invoice.status === "partially_repaid" ||
+    invoice.status === "settled"
+  ) {
+    return (
+      invoice.advanceReleased ||
+      invoice.positions.reduce((sum, position) => sum + position.principal, 0)
+    );
+  }
   return invoice.bids.reduce((sum, bid) => sum + bid.amount, 0);
 }
 
@@ -115,6 +125,11 @@ export function bestApr(invoice: Invoice): number | null {
 
 export function clearingApr(invoice: Invoice): number | null {
   if (invoice.clearingApr != null) return invoice.clearingApr;
+  if (invoice.positions.length > 0) {
+    const total = invoice.positions.reduce((sum, p) => sum + p.principal, 0);
+    if (total <= 0) return null;
+    return invoice.positions.reduce((sum, p) => sum + p.apr * p.principal, 0) / total;
+  }
   const total = fundedAmount(invoice);
   if (total <= 0) return null;
   return invoice.bids.reduce((sum, b) => sum + b.apr * b.amount, 0) / total;
@@ -130,7 +145,8 @@ export function expectedReturnFor(principal: number, apr: number, days: number):
 }
 
 export function protocolFee(invoice: Invoice): number {
-  return Math.round(invoice.faceValue * (PROTOCOL_FEE_BPS / 10_000) * 100) / 100;
+  const feeBps = invoice.servicingFeeBps ?? PROTOCOL_FEE_BPS;
+  return Math.round(invoice.faceValue * (feeBps / 10_000) * 100) / 100;
 }
 
 export function lenderPayout(position: Position): number {

@@ -15,6 +15,7 @@ dist-ssr
 .tanstack/**
 .nitro
 docs/
+.codex-temp/
 *.local
 .env
 .env.*
