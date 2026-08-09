@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./public/morrow-banner.svg" alt="Morrow — Stablecoin-native receivables credit" width="100%" />
+  <img src="./public/morrow-banner.svg" alt="Morrow - stablecoin-native receivables credit on Arc" width="100%" />
 </p>
 
 <h1 align="center">Morrow</h1>
@@ -7,89 +7,105 @@
 <p align="center"><strong>Buyer-accepted invoices become programmable USDC credit on Arc.</strong></p>
 
 <p align="center">
-  <a href="https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D"><img src="https://img.shields.io/badge/Arc-Testnet-2563EB?style=flat-square" alt="Arc Testnet" /></a>
+  <a href="https://morrow.nikhilraikwar.me"><img src="https://img.shields.io/badge/Live-Morrow-2563EB?style=flat-square" alt="Live demo" /></a>
+  <a href="https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D"><img src="https://img.shields.io/badge/Arc%20Testnet-5042002-111827?style=flat-square" alt="Arc Testnet" /></a>
   <a href="https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D"><img src="https://img.shields.io/badge/Contract-Verified-16A34A?style=flat-square" alt="Verified contract" /></a>
   <img src="https://img.shields.io/badge/Settlement-USDC-2775CA?style=flat-square" alt="USDC settlement" />
-  <img src="https://img.shields.io/badge/Wallets-Circle%20Social%20Login-7C3AED?style=flat-square" alt="Circle social login wallets" />
+  <img src="https://img.shields.io/badge/Wallets-Circle%20User--Controlled-7C3AED?style=flat-square" alt="Circle user-controlled wallets" />
   <img src="https://img.shields.io/badge/License-MIT-111827?style=flat-square" alt="MIT license" />
 </p>
 
-> **Testnet prototype.** Morrow is unaudited hackathon software, not an investment product, credit offer, or production underwriting system.
+> Morrow is an unaudited Arc Testnet prototype. It is not an investment product, credit offer, broker, lender, or production underwriting system.
 
-## The product
+## What Morrow Does
 
-Businesses should not have to wait 30–90 days for money that a buyer has already agreed to pay. Morrow turns that accepted payment obligation into a transparent, stablecoin-native credit market:
+Morrow turns a confirmed B2B invoice into a transparent USDC funding market.
 
-- A business records the receivable and its commercial terms.
-- The buyer accepts the obligation onchain without changing their due date.
-- Lenders compete on APR and escrow USDC in the auction.
-- The best eligible bids fund the advance.
-- When the buyer pays, the Morrow contract executes one deterministic USDC waterfall: protocol fee, lender claims, then the business remainder.
+A business creates a receivable for money a buyer already owes. The buyer accepts the obligation onchain. Lenders compete to advance USDC at the lowest APR. When the buyer pays later, the smart contract distributes one deterministic settlement waterfall: protocol fee, lender claims, then the remaining business proceeds.
 
-No volatile collateral, manual lender reconciliation, or opaque payment routing.
+This makes receivables finance look like internet-native infrastructure instead of email threads, opaque factoring quotes, and manual reconciliation.
 
-## Why Arc + USDC
+## Why This Belongs On Arc
 
-Morrow treats USDC as the unit of account from the first bid to final settlement. Arc gives that workflow USDC-denominated gas and rapid finality; USDC makes advances, escrow, repayment, and accounting legible in the same currency. Circle user-controlled wallets add Google authentication and explicit approvals without asking a business, buyer, or lender to manage a seed phrase.
+Arc is stablecoin-native: USDC is the gas token and the primary money layer. Morrow uses that directly:
 
-## How Morrow works
+- Receivable face values, advances, bids, repayments, and fees are all denominated in USDC.
+- Circle user-controlled wallets give businesses, buyers, and lenders Google-based onboarding with explicit transaction approvals.
+- Arc contract events are the source of truth for public market listings and dashboard state.
+- Canonical Arc ERC-20 USDC at `0x3600000000000000000000000000000000000000` is used for application-level transfers, approvals, escrow, and repayment.
+
+## Product Flow
 
 ```mermaid
-%%{init: {'theme':'base','themeVariables': {'primaryColor':'#dbeafe','primaryTextColor':'#111827','primaryBorderColor':'#2563eb','lineColor':'#64748b','secondaryColor':'#dcfce7','tertiaryColor':'#fef3c7'}}}%%
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#dbeafe","primaryTextColor":"#0f172a","primaryBorderColor":"#2563eb","secondaryColor":"#dcfce7","tertiaryColor":"#fef3c7","lineColor":"#64748b","fontFamily":"Inter, Arial"}}}%%
 flowchart LR
-  B["🏢 Business<br/>Creates receivable"] --> R["MorrowMarket<br/>Commercial terms + document digest"]
-  R --> Y["✓ Buyer<br/>Accepts payment obligation"]
-  Y --> A["⚖ Funding auction<br/>Lenders compete on APR"]
-  L["💵 Lenders<br/>Escrow Arc USDC"] --> A
-  A --> F["Advance released<br/>to business"]
-  P["Buyer repays<br/>in USDC"] --> W["◈ Settlement waterfall"]
-  W --> Fee["Protocol fee"]
-  W --> Claims["Lender principal + yield"]
-  W --> Seller["Business remainder"]
-```
+  business["Business<br/>creates receivable"]:::actor --> contract["MorrowMarket<br/>terms + document digest"]:::contract
+  contract --> buyer["Buyer<br/>accepts obligation"]:::actor
+  buyer --> auction["Funding auction<br/>lowest APR clears first"]:::auction
+  lenders["Lenders<br/>approve + bid USDC"]:::actor --> auction
+  auction --> advance["Advance released<br/>to business"]:::money
+  repayment["Buyer repays<br/>USDC"]:::money --> waterfall["Settlement waterfall"]:::contract
+  waterfall --> fee["Protocol fee"]:::money
+  waterfall --> claims["Lender principal + return"]:::money
+  waterfall --> remainder["Business remainder"]:::money
 
-### Lifecycle rules enforced onchain
+  classDef actor fill:#eff6ff,stroke:#2563eb,color:#0f172a;
+  classDef contract fill:#111827,stroke:#2563eb,color:#ffffff;
+  classDef auction fill:#fef3c7,stroke:#d97706,color:#111827;
+  classDef money fill:#dcfce7,stroke:#16a34a,color:#052e16;
+```
 
 ```mermaid
-%%{init: {'theme':'base','themeVariables': {'primaryColor':'#e0e7ff','primaryTextColor':'#111827','primaryBorderColor':'#4f46e5','lineColor':'#64748b','secondaryColor':'#dcfce7','tertiaryColor':'#fee2e2'}}}%%
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#e0e7ff","primaryTextColor":"#111827","primaryBorderColor":"#4f46e5","secondaryColor":"#dcfce7","tertiaryColor":"#fee2e2","lineColor":"#64748b","fontFamily":"Inter, Arial"}}}%%
 stateDiagram-v2
-  [*] --> AwaitingBuyer: Business creates receivable
-  AwaitingBuyer --> BuyerAccepted: Buyer accepts
-  AwaitingBuyer --> Rejected: Buyer rejects / business cancels
-  BuyerAccepted --> AuctionLive: Business opens auction
-  AuctionLive --> Funded: Lowest-APR allocation finalizes
-  AuctionLive --> Rejected: Unfilled auction cancelled
-  Funded --> PartiallyRepaid: Buyer repays
-  PartiallyRepaid --> Settled: Remaining payment clears
-  Funded --> Settled: Full payment clears
+  [*] --> AwaitingBuyer: createReceivable
+  AwaitingBuyer --> BuyerAccepted: acceptReceivable
+  AwaitingBuyer --> Rejected: reject or cancel
+  BuyerAccepted --> AuctionLive: openAuction
+  AuctionLive --> Funded: finalizeAuction
+  AuctionLive --> Cancelled: cancelUnfilledAuction
+  Funded --> PartiallyRepaid: partial repay
+  PartiallyRepaid --> Settled: final repay
+  Funded --> Settled: full repay
 ```
 
-## What is live on Arc Testnet
+## Live Proof
 
-| Item            | Status                                                                                                                |
-| --------------- | --------------------------------------------------------------------------------------------------------------------- |
-| MorrowMarket v1 | [Verified on Arcscan](https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D)                 |
-| Deployment      | [View transaction](https://testnet.arcscan.app/tx/0xac94f5841769b13a59c1ad974b95bf3e5536cc3b73906bbd0688ff0ce282ac2e) |
-| USDC asset      | Canonical Arc ERC-20 USDC `0x3600000000000000000000000000000000000000` (6 decimals)                                   |
-| Market actions  | Create, accept/reject, open/finalize/cancel auction, approve + bid, refund, and repay                                 |
-| Dashboard data  | Arc RPC reads plus decoded MorrowMarket events — no seeded invoice data                                               |
-| Wallet approval | Circle User-Controlled Wallet social login and confirmation challenges, with server-side action allowlisting          |
-| Notifications   | Signed Circle webhook endpoint; Arc receipt/event state remains authoritative                                         |
+| Item | Current status |
+| --- | --- |
+| Live app | [morrow.nikhilraikwar.me](https://morrow.nikhilraikwar.me) |
+| Network | Arc Testnet, chain ID `5042002` |
+| Contract | [`0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D`](https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D) |
+| Deployment tx | [`0xac94f5841769b13a59c1ad974b95bf3e5536cc3b73906bbd0688ff0ce282ac2e`](https://testnet.arcscan.app/tx/0xac94f5841769b13a59c1ad974b95bf3e5536cc3b73906bbd0688ff0ce282ac2e) |
+| Settlement asset | Arc canonical ERC-20 USDC, 6 decimals |
+| Wallet flow | Circle user-controlled wallets with social login and confirmation challenges |
+| Market data | Read from Arc RPC and decoded MorrowMarket events |
 
-## Use it end to end
+## Demo Path
 
-1. Open **Connect**, authenticate with Google, and create/access an Arc Testnet Circle wallet.
-2. As the business, create a receivable with the buyer’s Arc wallet address, due date, face value, advance request, and APR ceiling.
-3. In a separate Circle user/browser profile, the buyer accepts the receivable.
-4. The business opens the auction. Lenders approve canonical Arc USDC, then place bids in separate profiles.
-5. The business finalizes a fully funded auction. Morrow deterministically selects up to 32 bids by APR, then timestamp and bid index.
-6. The buyer approves USDC and repays. The onchain contract distributes the payment waterfall and the dashboard refreshes directly from Arc events.
+1. Open the landing page and show the illustrative invoice-to-settlement walkthrough.
+2. Open the public market to show walletless, read-only Arc contract data.
+3. Sign in with Google through Circle and enter the business workspace.
+4. Create a 10 USDC receivable with the buyer's Arc wallet address.
+5. In a second browser profile, sign in as the buyer and accept the invoice.
+6. Return as the business and open the funding auction.
+7. In lender profiles, approve USDC and place bids.
+8. Finalize the auction, then repay from the buyer wallet and show the settlement waterfall.
+9. Open Arcscan links to prove the transactions are real Arc Testnet actions.
 
-Every value-moving action is created by the server from a fixed contract/ABI allowlist, approved through Circle's confirmation UI, then confirmed through Arc state. The browser never receives a private key, Circle API key, entity secret, or arbitrary calldata capability.
+## Security Model
 
-## Operating Morrow locally
+Morrow separates the trust boundary clearly:
 
-Node 22+, npm, and Foundry are required.
+- The browser requests named actions, not arbitrary calldata.
+- The server maps each action to an allowlisted contract address and ABI function.
+- Circle API keys, entity secrets, refresh tokens, and deployer keys are never exposed through `VITE_` variables.
+- Circle user tokens and encryption keys are kept in browser memory and refreshed from the server session before approvals.
+- Arc receipt/event state is authoritative; Circle webhooks only accelerate UI refresh.
+
+Read [SECURITY.md](./SECURITY.md) for the complete threat model and testnet limitations.
+
+## Local Development
 
 ```sh
 npm install
@@ -101,7 +117,7 @@ cd contracts
 .\tools\foundry\forge.exe test -vv
 ```
 
-Set these **public** Arc variables in `.env` and Vercel:
+Required public Arc variables:
 
 ```dotenv
 VITE_MORROW_MODE=arc
@@ -110,12 +126,8 @@ VITE_ARC_CHAIN_ID=5042002
 VITE_MORROW_MARKET_ADDRESS=0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D
 ```
 
-Circle server credentials belong only in server environment variables. Never use `VITE_` for a Circle API key, user token, encryption key, entity secret, or deployer private key.
+Server-only Circle and deployer credentials must stay out of the public client bundle.
 
-## Trust boundaries
+## License
 
-- Invoice documents and commercial evidence remain offchain; Morrow stores a document digest and terms.
-- MorrowMarket is the settlement source of truth. Webhooks speed up refreshes only.
-- Test USDC only. No KYC/KYB, credit scoring, invoice verification, collections, or production compliance is provided.
-
-Read [SECURITY.md](./SECURITY.md) for the threat model and [LICENSE](./LICENSE) for the MIT license.
+MIT, maintained by Nikhil Raikwar.

@@ -32,10 +32,13 @@ import {
 } from "@/lib/morrow/format";
 import { cn } from "@/lib/utils";
 
+const SITE_URL = "https://morrow.nikhilraikwar.me";
+const SOCIAL_IMAGE = `${SITE_URL}/morrow-og.jpg`;
+
 export const Route = createFileRoute("/invoice/$id")({
   head: ({ params }) => ({
     meta: [
-      { title: "Invoice detail — Morrow" },
+      { title: "Invoice detail - Morrow" },
       {
         name: "description",
         content:
@@ -50,11 +53,18 @@ export const Route = createFileRoute("/invoice/$id")({
         name: "keywords",
         content: "invoice detail, receivable obligation, USDC advance, buyer acceptance",
       },
-      { property: "og:url", content: `/invoice/${params.id}` },
-      { property: "og:image", content: "/morrow-og.jpg" },
-      { name: "twitter:image", content: "/morrow-og.jpg" },
+      { property: "og:url", content: `${SITE_URL}/invoice/${params.id}` },
+      { property: "og:image", content: SOCIAL_IMAGE },
+      { property: "og:image:alt", content: "Morrow invoice detail on Arc" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Invoice detail on Morrow" },
+      {
+        name: "twitter:description",
+        content: "View a receivable record and Arc settlement state.",
+      },
+      { name: "twitter:image", content: SOCIAL_IMAGE },
     ],
-    links: [{ rel: "canonical", href: `/invoice/${params.id}` }],
+    links: [{ rel: "canonical", href: `${SITE_URL}/invoice/${params.id}` }],
   }),
   component: InvoiceDetail,
 });

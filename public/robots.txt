@@ -6,3 +6,5 @@ Disallow: /dashboard/
 Disallow: /portfolio
 Disallow: /activity
 Disallow: /settings
+
+Sitemap: https://morrow.nikhilraikwar.me/sitemap.xml

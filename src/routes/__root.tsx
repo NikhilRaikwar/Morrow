@@ -15,6 +15,11 @@ import { MorrowProvider } from "../lib/morrow/store";
 import { CircleWalletProvider } from "../lib/circle/wallet-context";
 import { Toaster } from "../components/ui/sonner";
 
+const SITE_URL = "https://morrow.nikhilraikwar.me";
+const SOCIAL_IMAGE = `${SITE_URL}/morrow-og.jpg`;
+const SITE_DESCRIPTION =
+  "Morrow turns buyer-accepted B2B invoices into transparent, financeable USDC cash flows on Arc.";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -77,11 +82,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Morrow — Receivables credit market on Arc" },
+      { title: "Morrow - Receivables credit market on Arc" },
       {
         name: "description",
-        content:
-          "Morrow turns buyer-accepted B2B invoices into transparent, financeable USDC cash flows on Arc.",
+        content: SITE_DESCRIPTION,
       },
       {
         name: "keywords",
@@ -94,7 +98,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:site_name", content: "Morrow" },
       { property: "og:locale", content: "en_US" },
       { property: "og:type", content: "website" },
+      { property: "og:title", content: "Morrow - Receivables credit market on Arc" },
+      { property: "og:description", content: SITE_DESCRIPTION },
+      { property: "og:url", content: SITE_URL },
+      { property: "og:image", content: SOCIAL_IMAGE },
+      { property: "og:image:alt", content: "Morrow receivables credit market on Arc" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Morrow - Receivables credit market on Arc" },
+      { name: "twitter:description", content: SITE_DESCRIPTION },
+      { name: "twitter:image", content: SOCIAL_IMAGE },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -114,10 +126,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "@context": "https://schema.org",
           "@type": "Organization",
           name: "Morrow",
-          description:
-            "Stablecoin-native receivables credit market on Arc. Businesses sell buyer-accepted invoices to lenders for immediate USDC.",
-          logo: "/favicon.png",
-          url: "/",
+          description: SITE_DESCRIPTION,
+          logo: `${SITE_URL}/favicon.png`,
+          url: SITE_URL,
         }),
       },
     ],

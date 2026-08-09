@@ -5,10 +5,14 @@ import { Disclaimer, Pill, SectionHeading } from "@/components/morrow/primitives
 import { WaterfallBars } from "@/components/morrow/waterfall";
 import { Button } from "@/components/ui/button";
 
+const SITE_URL = "https://morrow.nikhilraikwar.me";
+const PAGE_URL = `${SITE_URL}/how-it-works`;
+const SOCIAL_IMAGE = `${SITE_URL}/morrow-og.jpg`;
+
 export const Route = createFileRoute("/how-it-works")({
   head: () => ({
     meta: [
-      { title: "How Morrow works — receivables financing on Arc" },
+      { title: "How Morrow works - receivables financing on Arc" },
       {
         name: "description",
         content:
@@ -20,12 +24,18 @@ export const Route = createFileRoute("/how-it-works")({
         content: "Buyer-accepted invoices, competitive lender auctions, programmable settlement.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "/how-it-works" },
-      { property: "og:image", content: "/morrow-og.jpg" },
+      { property: "og:url", content: PAGE_URL },
+      { property: "og:image", content: SOCIAL_IMAGE },
+      { property: "og:image:alt", content: "Morrow invoice lifecycle on Arc" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "/morrow-og.jpg" },
+      { name: "twitter:title", content: "How Morrow works" },
+      {
+        name: "twitter:description",
+        content: "Buyer acceptance, lender auctions, and USDC settlement on Arc.",
+      },
+      { name: "twitter:image", content: SOCIAL_IMAGE },
     ],
-    links: [{ rel: "canonical", href: "/how-it-works" }],
+    links: [{ rel: "canonical", href: PAGE_URL }],
   }),
   component: HowItWorksPage,
 });

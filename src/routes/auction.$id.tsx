@@ -28,10 +28,13 @@ import {
 } from "@/lib/morrow/format";
 import { cn } from "@/lib/utils";
 
+const SITE_URL = "https://morrow.nikhilraikwar.me";
+const SOCIAL_IMAGE = `${SITE_URL}/morrow-og.jpg`;
+
 export const Route = createFileRoute("/auction/$id")({
   head: ({ params }) => ({
     meta: [
-      { title: "Live funding auction — Morrow" },
+      { title: "Live funding auction - Morrow" },
       {
         name: "description",
         content:
@@ -46,11 +49,18 @@ export const Route = createFileRoute("/auction/$id")({
         name: "keywords",
         content: "receivable auction, competitive bidding, USDC funding, clearing APR",
       },
-      { property: "og:url", content: `/auction/${params.id}` },
-      { property: "og:image", content: "/morrow-og.jpg" },
-      { name: "twitter:image", content: "/morrow-og.jpg" },
+      { property: "og:url", content: `${SITE_URL}/auction/${params.id}` },
+      { property: "og:image", content: SOCIAL_IMAGE },
+      { property: "og:image:alt", content: "Morrow live funding auction on Arc" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Live funding auction on Morrow" },
+      {
+        name: "twitter:description",
+        content: "Watch lenders compete to fund an accepted receivable.",
+      },
+      { name: "twitter:image", content: SOCIAL_IMAGE },
     ],
-    links: [{ rel: "canonical", href: `/auction/${params.id}` }],
+    links: [{ rel: "canonical", href: `${SITE_URL}/auction/${params.id}` }],
   }),
   component: AuctionRoom,
 });

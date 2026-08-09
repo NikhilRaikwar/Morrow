@@ -23,16 +23,19 @@ import { LifecycleScene } from "@/components/morrow/lifecycle-scene";
 import { HeroAuctionCard } from "@/components/morrow/hero-auction-card";
 import { usdc } from "@/lib/morrow/format";
 
+const SITE_URL = "https://morrow.nikhilraikwar.me";
+const SOCIAL_IMAGE = `${SITE_URL}/morrow-og.jpg`;
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Morrow — Sell tomorrow's receivable for today's USDC" },
+      { title: "Morrow - Sell tomorrow's receivable for today's USDC" },
       {
         name: "description",
         content:
           "Morrow is a stablecoin-native receivables credit market on Arc. Buyers confirm invoices, lenders compete to finance them, and settlement is automatic.",
       },
-      { property: "og:title", content: "Morrow — Receivables credit market on Arc" },
+      { property: "og:title", content: "Morrow - Receivables credit market on Arc" },
       {
         property: "og:description",
         content:
@@ -43,11 +46,17 @@ export const Route = createFileRoute("/")({
         content:
           "receivables financing, invoice factoring, USDC, Arc, stablecoin credit market, B2B working capital",
       },
-      { property: "og:url", content: "/" },
-      { property: "og:image", content: "/morrow-og.jpg" },
-      { name: "twitter:image", content: "/morrow-og.jpg" },
+      { property: "og:url", content: SITE_URL },
+      { property: "og:image", content: SOCIAL_IMAGE },
+      { property: "og:image:alt", content: "Morrow receivables credit market on Arc" },
+      { name: "twitter:title", content: "Morrow - Receivables credit market on Arc" },
+      {
+        name: "twitter:description",
+        content: "Turn buyer-accepted invoices into USDC credit on Arc.",
+      },
+      { name: "twitter:image", content: SOCIAL_IMAGE },
     ],
-    links: [{ rel: "canonical", href: "/" }],
+    links: [{ rel: "canonical", href: SITE_URL }],
   }),
   component: Landing,
 });

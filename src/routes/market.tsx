@@ -9,12 +9,29 @@ import { Input } from "@/components/ui/input";
 import { useMorrow } from "@/lib/morrow/store";
 import { bestApr, formatDate, fundedAmount, isMarketVisible, usdc } from "@/lib/morrow/format";
 
+const SITE_URL = "https://morrow.nikhilraikwar.me";
+const MARKET_URL = `${SITE_URL}/market`;
+const SOCIAL_IMAGE = `${SITE_URL}/morrow-og.jpg`;
+
 export const Route = createFileRoute("/market")({
   head: () => ({
     meta: [
-      { title: "Receivables market — Morrow" },
+      { title: "Receivables market - Morrow" },
       { name: "description", content: "Explore buyer-accepted receivables funding on Arc." },
+      { property: "og:title", content: "Morrow receivables market" },
+      {
+        property: "og:description",
+        content: "Read live MorrowMarket listings directly from Arc Testnet.",
+      },
+      { property: "og:url", content: MARKET_URL },
+      { property: "og:image", content: SOCIAL_IMAGE },
+      { property: "og:image:alt", content: "Morrow public receivables market" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Morrow receivables market" },
+      { name: "twitter:description", content: "Read live buyer-accepted receivables from Arc." },
+      { name: "twitter:image", content: SOCIAL_IMAGE },
     ],
+    links: [{ rel: "canonical", href: MARKET_URL }],
   }),
   component: MarketPage,
 });
