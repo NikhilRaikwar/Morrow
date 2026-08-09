@@ -14,6 +14,7 @@ dist-ssr
 .vinxi
 .tanstack/**
 .nitro
+docs/
 *.local
 .env
 .env.*
@@ -22,6 +23,8 @@ dist-ssr
 # Solidity compiler artifacts
 contracts/out/
 contracts/cache/
+contracts/broadcast/
+contracts/lib/
 contracts/tools/
 
 # Wrangler / Cloudflare
