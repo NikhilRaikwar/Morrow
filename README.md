@@ -93,6 +93,8 @@ Arc docs define Arc Testnet as chain ID `5042002`, RPC `https://rpc.testnet.arc.
 | --- | --- |
 | App | [morrow.nikhilraikwar.me](https://morrow.nikhilraikwar.me) |
 | Public market | [morrow.nikhilraikwar.me/market](https://morrow.nikhilraikwar.me/market) |
+| Demo video | [YouTube](https://youtu.be/k-qYZ2H1loM) |
+| Presentation | [Google Slides](https://docs.google.com/presentation/d/14sbp_qFrToF_CVYG9R2qsfAWblh6ID87te1tTXhr4bE/edit?usp=sharing) |
 | Network | Arc Testnet |
 | Chain ID | `5042002` |
 | Contract | [`0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D`](https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D) |
