@@ -99,7 +99,7 @@ function AuctionRoom() {
       <AppShell>
         <div className="mx-auto max-w-md py-20 text-center">
           <h1 className="text-[20px] font-semibold text-foreground">Auction not found</h1>
-          <Link to="/market" className="mt-6 inline-block">
+          <Link to="/dashboard/market" className="mt-6 inline-block">
             <Button>Back to market</Button>
           </Link>
         </div>
@@ -136,7 +136,7 @@ function AuctionRoom() {
   return (
     <AppShell>
       <Link
-        to="/market"
+        to="/dashboard/market"
         className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" />

@@ -104,7 +104,7 @@ function LenderDashboard() {
         title="Short-duration yield from confirmed invoices."
         description="Every position is backed by a buyer-accepted payment obligation."
         actions={
-          <Link to="/market">
+          <Link to="/dashboard/market">
             <Button>Browse market</Button>
           </Link>
         }
@@ -230,7 +230,10 @@ function LenderDashboard() {
       <section className="mt-8">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-[18px] font-semibold text-foreground">Opportunities</h2>
-          <Link to="/market" className="text-[13px] font-medium text-primary hover:underline">
+          <Link
+            to="/dashboard/market"
+            className="text-[13px] font-medium text-primary hover:underline"
+          >
             View all
           </Link>
         </div>
@@ -298,7 +301,7 @@ function LenderDashboard() {
             title="No positions yet"
             description="Fund your first receivable to start earning."
             action={
-              <Link to="/market">
+              <Link to="/dashboard/market">
                 <Button>Browse market</Button>
               </Link>
             }

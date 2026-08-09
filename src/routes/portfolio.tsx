@@ -52,7 +52,7 @@ function PortfolioPage() {
         title="Portfolio"
         description="Every position, its expected return and how much has already been repaid."
         actions={
-          <Link to="/market">
+          <Link to="/dashboard/market">
             <Button>Deploy more capital</Button>
           </Link>
         }
@@ -79,7 +79,7 @@ function PortfolioPage() {
             title="No positions yet"
             description="Fund a receivable from the market to build your portfolio."
             action={
-              <Link to="/market">
+              <Link to="/dashboard/market">
                 <Button>Browse market</Button>
               </Link>
             }

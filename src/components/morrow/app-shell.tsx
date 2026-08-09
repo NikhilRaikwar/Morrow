@@ -57,7 +57,7 @@ function navItems(workspace: Workspace) {
           { label: "My invoices", to: "/dashboard/business", hash: "invoices", icon: Files },
         ]
       : []),
-    { label: "Public market", to: "/market", icon: Store },
+    { label: "Market", to: "/dashboard/market", icon: Store },
     { label: "Portfolio", to: "/portfolio", icon: PieChart },
     { label: "Arc activity", to: "/activity", icon: Activity },
     { label: "Settings", to: "/settings", icon: Settings },

@@ -22,6 +22,7 @@ import { Route as AuctionIdRouteImport } from './routes/auction.$id'
 import { Route as DashboardBusinessRouteImport } from './routes/dashboard.business'
 import { Route as DashboardBuyerRouteImport } from './routes/dashboard.buyer'
 import { Route as DashboardLenderRouteImport } from './routes/dashboard.lender'
+import { Route as DashboardMarketRouteImport } from './routes/dashboard.market'
 import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
 import { Route as ApiArcRpcRouteImport } from './routes/api.arc.rpc'
 import { Route as ApiCircleChallengeRouteImport } from './routes/api.circle.challenge'
@@ -99,6 +100,11 @@ const DashboardLenderRoute = DashboardLenderRouteImport.update({
   path: '/dashboard/lender',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardMarketRoute = DashboardMarketRouteImport.update({
+  id: '/dashboard/market',
+  path: '/dashboard/market',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InvoiceIdRoute = InvoiceIdRouteImport.update({
   id: '/invoice/$id',
   path: '/invoice/$id',
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/business': typeof DashboardBusinessRoute
   '/dashboard/buyer': typeof DashboardBuyerRoute
   '/dashboard/lender': typeof DashboardLenderRoute
+  '/dashboard/market': typeof DashboardMarketRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/api/arc/rpc': typeof ApiArcRpcRoute
   '/api/circle/challenge': typeof ApiCircleChallengeRouteWithChildren
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/dashboard/business': typeof DashboardBusinessRoute
   '/dashboard/buyer': typeof DashboardBuyerRoute
   '/dashboard/lender': typeof DashboardLenderRoute
+  '/dashboard/market': typeof DashboardMarketRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/api/arc/rpc': typeof ApiArcRpcRoute
   '/api/circle/challenge': typeof ApiCircleChallengeRouteWithChildren
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/dashboard/business': typeof DashboardBusinessRoute
   '/dashboard/buyer': typeof DashboardBuyerRoute
   '/dashboard/lender': typeof DashboardLenderRoute
+  '/dashboard/market': typeof DashboardMarketRoute
   '/invoice/$id': typeof InvoiceIdRoute
   '/api/arc/rpc': typeof ApiArcRpcRoute
   '/api/circle/challenge': typeof ApiCircleChallengeRouteWithChildren
@@ -252,6 +261,7 @@ export interface FileRouteTypes {
     | '/dashboard/business'
     | '/dashboard/buyer'
     | '/dashboard/lender'
+    | '/dashboard/market'
     | '/invoice/$id'
     | '/api/arc/rpc'
     | '/api/circle/challenge'
@@ -278,6 +288,7 @@ export interface FileRouteTypes {
     | '/dashboard/business'
     | '/dashboard/buyer'
     | '/dashboard/lender'
+    | '/dashboard/market'
     | '/invoice/$id'
     | '/api/arc/rpc'
     | '/api/circle/challenge'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/dashboard/business'
     | '/dashboard/buyer'
     | '/dashboard/lender'
+    | '/dashboard/market'
     | '/invoice/$id'
     | '/api/arc/rpc'
     | '/api/circle/challenge'
@@ -331,6 +343,7 @@ export interface RootRouteChildren {
   DashboardBusinessRoute: typeof DashboardBusinessRoute
   DashboardBuyerRoute: typeof DashboardBuyerRoute
   DashboardLenderRoute: typeof DashboardLenderRoute
+  DashboardMarketRoute: typeof DashboardMarketRoute
   InvoiceIdRoute: typeof InvoiceIdRoute
   ApiArcRpcRoute: typeof ApiArcRpcRoute
   ApiCircleChallengeRoute: typeof ApiCircleChallengeRouteWithChildren
@@ -434,6 +447,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard/lender'
       fullPath: '/dashboard/lender'
       preLoaderRoute: typeof DashboardLenderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/market': {
+      id: '/dashboard/market'
+      path: '/dashboard/market'
+      fullPath: '/dashboard/market'
+      preLoaderRoute: typeof DashboardMarketRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/invoice/$id': {
@@ -541,6 +561,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardBusinessRoute: DashboardBusinessRoute,
   DashboardBuyerRoute: DashboardBuyerRoute,
   DashboardLenderRoute: DashboardLenderRoute,
+  DashboardMarketRoute: DashboardMarketRoute,
   InvoiceIdRoute: InvoiceIdRoute,
   ApiArcRpcRoute: ApiArcRpcRoute,
   ApiCircleChallengeRoute: ApiCircleChallengeRouteWithChildren,
