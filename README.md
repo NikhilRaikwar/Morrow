@@ -43,17 +43,22 @@ Morrow sits at the intersection of those three shifts: invoice finance, stableco
 ### Receivable Funding Flow
 
 ```mermaid
-%%{init: {"theme":"base","flowchart":{"htmlLabels":true,"nodeSpacing":70,"rankSpacing":72},"themeVariables":{"fontFamily":"Inter, Arial","fontSize":"17px","primaryTextColor":"#0f172a","lineColor":"#64748b"}}}%%
+%%{init: {"theme":"base","flowchart":{"htmlLabels":false,"nodeSpacing":80,"rankSpacing":80,"padding":24},"themeVariables":{"fontFamily":"Arial","fontSize":"18px","primaryTextColor":"#0f172a","lineColor":"#64748b"}}}%%
 flowchart TD
-  A["<b>1. Business creates receivable</b><br/>Seller, buyer, face value, advance, due date"]:::blue
-  B["<b>2. Buyer accepts invoice</b><br/>Payment obligation is confirmed on Arc"]:::blue
-  C["<b>3. Seller opens auction</b><br/>Lenders bid USDC with their required APR"]:::yellow
-  D["<b>4. Auction clears</b><br/>Lowest APR bids fill the advance first"]:::purple
-  E["<b>5. Advance is released</b><br/>Business receives USDC working capital"]:::green
-  F["<b>6. Buyer repays</b><br/>USDC enters the settlement vault"]:::green
-  G["<b>7. Waterfall settles</b><br/>Protocol fee, lenders, then business remainder"]:::green
+  A["1. Create receivable"]:::blue
+  B["2. Buyer accepts"]:::blue
+  C["3. Open auction"]:::yellow
+  D["4. Lowest APR bids fill"]:::purple
+  E["5. USDC advance released"]:::green
+  F["6. Buyer repays USDC"]:::green
+  G["7. Waterfall settles"]:::green
 
-  A --> B --> C --> D --> E --> F --> G
+  A -->|"seller, buyer, amount, due date"| B
+  B -->|"confirmed obligation"| C
+  C -->|"lenders bid USDC"| D
+  D -->|"winning bids selected"| E
+  E -->|"business gets working capital"| F
+  F -->|"repayment enters vault"| G
 
   classDef blue fill:#dbeafe,stroke:#2563eb,color:#0f172a,stroke-width:2px;
   classDef yellow fill:#fef3c7,stroke:#d97706,color:#111827,stroke-width:2px;
@@ -64,16 +69,16 @@ flowchart TD
 ### Receivable State Machine
 
 ```mermaid
-%%{init: {"theme":"base","flowchart":{"nodeSpacing":64,"rankSpacing":70},"themeVariables":{"fontFamily":"Inter, Arial","fontSize":"17px","primaryTextColor":"#0f172a","lineColor":"#64748b"}}}%%
+%%{init: {"theme":"base","flowchart":{"htmlLabels":false,"nodeSpacing":90,"rankSpacing":90,"padding":24},"themeVariables":{"fontFamily":"Arial","fontSize":"18px","primaryTextColor":"#0f172a","lineColor":"#64748b"}}}%%
 flowchart TD
-  start(["Create receivable"]):::start
-  awaiting["Awaiting buyer"]:::state
-  accepted["Buyer accepted"]:::state
-  live["Auction live"]:::state
+  start(["Created"]):::start
+  awaiting["Awaiting"]:::state
+  accepted["Accepted"]:::state
+  live["Auction"]:::state
   funded["Funded"]:::state
-  partial["Partially repaid"]:::state
+  partial["Partial repay"]:::state
   settled["Settled"]:::done
-  cancelled["Cancelled or rejected"]:::stop
+  cancelled["Cancelled"]:::stop
 
   start --> awaiting --> accepted --> live --> funded
   funded --> partial --> settled
