@@ -19,6 +19,17 @@ Morrow lets a business turn a buyer-accepted invoice into immediate USDC. The bu
 
 This is an Arc Testnet MVP. It is not a production lending product, investment product, broker, lender, credit underwriter, or mainnet protocol.
 
+## Final Submission Links
+
+| Item | Link |
+| --- | --- |
+| Live app | [morrow.nikhilraikwar.me](https://morrow.nikhilraikwar.me) |
+| Public market | [morrow.nikhilraikwar.me/market](https://morrow.nikhilraikwar.me/market) |
+| Demo video | [YouTube demo](https://www.youtube.com/watch?v=k-qYZ2H1loM) |
+| Team video | [Nikhil Raikwar introduction](https://www.youtube.com/watch?v=CCd2c4VBQHc) |
+| Pitch deck | [Google Slides](https://docs.google.com/presentation/d/14sbp_qFrToF_CVYG9R2qsfAWblh6ID87te1tTXhr4bE/edit?usp=sharing) |
+| Verified contract | [Arcscan](https://testnet.arcscan.app/address/0xB871Cc4Ee16Ae7A1FD1925d36Bbd714A64755e6D) |
+
 ## Why Morrow
 
 Receivables financing is one of the oldest forms of working capital, but the workflow is still slow: private quotes, manual verification, delayed bank settlement, and reconciliation after payment.
@@ -113,6 +124,7 @@ Arc docs define Arc Testnet as chain ID `5042002`, RPC `https://rpc.testnet.arc.
 | App | [morrow.nikhilraikwar.me](https://morrow.nikhilraikwar.me) |
 | Public market | [morrow.nikhilraikwar.me/market](https://morrow.nikhilraikwar.me/market) |
 | Demo video | [YouTube](https://youtu.be/k-qYZ2H1loM) |
+| Team video | [YouTube](https://www.youtube.com/watch?v=CCd2c4VBQHc) |
 | Presentation | [Google Slides](https://docs.google.com/presentation/d/14sbp_qFrToF_CVYG9R2qsfAWblh6ID87te1tTXhr4bE/edit?usp=sharing) |
 | Network | Arc Testnet |
 | Chain ID | `5042002` |
